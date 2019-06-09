@@ -1,10 +1,14 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.utils as vutils
 
+from models import Discriminator, Generator
+from config import device
+
 
 def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
-          weight_dir=None, d=None, g=None, d_head_start=0, dg_ratio=1):
+              weight_dir=None, d=None, g=None, d_head_start=0, gd_ratio=1):
     """Train generator and discriminator with Adam.
     
     IN PROGRESS - getting errors suggesting I need retain_graph=True in 
@@ -23,7 +27,7 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     dl: DataLoader
     lr: float
         Learning rate. Paper recommends .0002.
-    beta1: float
+    b1: float
         Hyperparameter for Adam. Paper recommends 0.5.
     sample_freq: int
         Save sample images from generator every n epochs (default 10).
@@ -36,6 +40,12 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
         Discriminator (binary classifier, 1 for real, 0 for fake).
     g: nn.Module
         Generator (upsamples random noise into image).
+    d_head_start: int
+        Number of epochs to train D for before starting to train G.
+    gd_ratio: int
+        Number of times to train G for each time we train D. In other words,
+        G will be trained every epoch, but D will only be trained every
+        gd_ratio epochs.
     """
     if not (d or g):
         g = Generator().to(device)
@@ -50,16 +60,13 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     
     # Noise used for sample images, not training.
     fixed_noise = torch.randn(dl.batch_size, 100, 1, 1, device=device)
-    real_label = 1
-    fake_label = 0
-    
+
     # Store stats to return at end.
     d_real_losses = []
     d_fake_losses = []
     d_real_avg = []
     d_fake_avg = []
     g_losses = []
-    samples = []
     
     # Train D and G.
     for epoch in range(epochs):
@@ -76,7 +83,7 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             # as it can easily overpower the generator.
             ##################################################################
             d_optim.zero_grad()
-            train_d = (i % dg_ratio == 0) or (epoch < d_head_start)
+            train_d = (i % gd_ratio == 0) or (epoch < d_head_start)
             if train_d:
                 fake = g(noise)
                 y_hat_fake = d(fake.detach())
@@ -157,7 +164,7 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     dl: DataLoader
     lr: float
         Learning rate. Paper recommends .0002.
-    beta1: float
+    b1: float
         Hyperparameter for Adam. Paper recommends 0.5.
     sample_freq: int
         Save sample images from generator every n epochs (default 10).
@@ -184,17 +191,14 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     
     # Noise used for sample images, not training.
     fixed_noise = torch.randn(dl.batch_size, 100, 1, 1, device=device)
-    real_label = 1
-    fake_label = 0
-    
+
     # Store stats to return at end.
     d_real_losses = []
     d_fake_losses = []
     d_real_avg = []
     d_fake_avg = []
     g_losses = []
-    samples = []
-    
+
     # Train D and G.
     for epoch in range(epochs):
         for i, (x, y) in enumerate(dl):
