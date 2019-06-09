@@ -10,3 +10,4 @@ photo_samples
 samples/
 weights/
 cifar/
+mnist/

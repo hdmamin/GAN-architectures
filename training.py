@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torchvision.utils as vutils
 
 from models import Discriminator, Generator
-from config import device
+from config import *
 
 
 def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
@@ -50,6 +50,7 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     if not (d or g):
         g = Generator().to(device)
         d = Discriminator().to(device)
+        # For GANs, models should stay in train mode.
         g.train()
         d.train()
     
@@ -67,7 +68,7 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     d_real_avg = []
     d_fake_avg = []
     g_losses = []
-    
+
     # Train D and G.
     for epoch in range(epochs):
         for i, (x, y) in enumerate(dl):
