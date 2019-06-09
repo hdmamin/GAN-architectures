@@ -4,16 +4,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def conv(strided, c_in, c_out, f, stride, pad, bias=False, bn=True):
-    """Create deconv block consisting of a backward strided convolution 
-    optionally followed by a batch norm layer.
+def conv_block(strided, c_in, c_out, f, stride, pad, bias=False, bn=True):
+    """Create a conv or deconv block (the latter referring to a backward
+    strided convolution) optionally followed by a batch norm layer.
     """
     if strided:
-        conv_ = nn.ConvTranspose2d(c_in, c_out, f, stride, pad, bias=bias)
+        conv = nn.ConvTranspose2d(c_in, c_out, f, stride, pad, bias=bias)
     else:
-        conv_ = nn.Conv2d(c_in, c_out, f, stride, pad, bias=bias)
-    conv_.weight.data.normal_(0.0, 0.02)
-    layers = [conv_]
+        conv = nn.Conv2d(c_in, c_out, f, stride, pad, bias=bias)
+    conv.weight.data.normal_(0.0, 0.02)
+    layers = [conv]
     if bn:
         bn_ = nn.BatchNorm2d(c_out)
         bn_.weight.data.normal_(1.0, 0.02)
@@ -45,27 +45,28 @@ class BaseModel(nn.Module):
                  for p in self.parameters()]
     
     def plot_weights(self):
-        fig, ax = plt.subplots()
-        for p in self.parameters():
-            ax[][].hist(p.weight.data)
-            ax[][].set_title()
+        fig, ax = plt.subplots(len(list(self.parameters)))
+        for i, p in enumerate(self.parameters()):
+            ax[i].hist(p.weight.data)
+            ax[i].set_title(p.shape)
         plt.show()
-    
+
+
 class Generator(BaseModel):
     """DCGAN Generator"""
     
-    def __init__(self, input_c=100, final_c=64):
+    def __init__(self, input_c=100, ngf=64):
         super().__init__()
         # 100 x 1 x 1 -> 512 x 4 x 4
-        self.deconv1 = conv(True, input_c, final_c*8, f=4, stride=1, pad=0)
+        self.deconv1 = conv_block(True, input_c, ngf*8, f=4, stride=1, pad=0)
         # 512 x 4 x 4 -> 256 x 8 x 8
-        self.deconv2 = conv(True, final_c*8, final_c*4, 4, 2, 1)
+        self.deconv2 = conv_block(True, ngf*8, ngf*4, 4, 2, 1)
         # 256 x 8 x 8 -> 128 x 16 x 16
-        self.deconv3 = conv(True, final_c*4, final_c*2, 4, 2, 1)
+        self.deconv3 = conv_block(True, ngf*4, ngf*2, 4, 2, 1)
         # 128 x 16 x 16 -> 64 x 32 x 32
-        self.deconv4 = conv(True, final_c*2, final_c, 4, 2, 1)
+        self.deconv4 = conv_block(True, ngf*2, ngf, 4, 2, 1)
         # 64 x 32 x 32 -> 3 x 64 x 64
-        self.deconv5 = conv(True, final_c, 3, 4, 2, 1, bn=False)
+        self.deconv5 = conv_block(True, ngf, 3, 4, 2, 1, bn=False)
         
     def forward(self, x):
         x = F.relu(self.deconv1(x), True)
@@ -79,33 +80,33 @@ class Generator(BaseModel):
 class Discriminator(BaseModel):
     """DCGAN discriminator."""
     
-    def __init__(self, dim_1=64, leak=.02):
+    def __init__(self, ndf=64, leak=.02):
         """
         Parameters
         -----------
-        dim_1: int
+        ndf: int
             # of filters in first conv layer.
         leak: float
             Slope of leaky relu where x < 0.
         """
         super().__init__()
         self.leak = leak
-        
+
         # 3 x 64 x 64 -> 64 x 32 x 32
-        self.conv1 = conv(False, 3, dim_1, f=4, stride=2, pad=1, bn=False)
+        conv1 = conv_block(False, 3, ndf, f=4, stride=2, pad=1, bn=False)
         # 64 x 32 x 32 -> 128 x 16 x 16
-        self.conv2 = conv(False, dim_1, dim_1*2, 4, 2, 1)
+        conv2 = conv_block(False, ndf, ndf*2, 4, 2, 1)
         # 128 x 16 x 16 -> 256 x 8 x 8
-        self.conv3 = conv(False, dim_1*2, dim_1*4, 4, 2, 1)
+        conv3 = conv_block(False, ndf*2, ndf*4, 4, 2, 1)
         # 256 x 8 x 8 -> 512 x 4 x 4
-        self.conv4 = conv(False, dim_1*4, dim_1*8, 4, 2, 1)
+        conv4 = conv_block(False, ndf*4, ndf*8, 4, 2, 1)
         # 512 x 4 x 4 -> 1 x 1 x 1
-        self.conv5 = conv(False, dim_1*8, 1, 4, 1, 0, bn=False)
+        conv5 = conv_block(False, ndf*8, 1, 4, 1, 0, bn=False)
+
+        self.layers = nn.ModuleList([conv1, conv2, conv3, conv4, conv5])
         
     def forward(self, x):
-        x = F.leaky_relu(self.conv1(x), self.leak, True)
-        x = F.leaky_relu(self.conv2(x), self.leak, True)
-        x = F.leaky_relu(self.conv3(x), self.leak, True)
-        x = F.leaky_relu(self.conv4(x), self.leak, True)
-        x = torch.sigmoid(self.conv5(x))
+        for layer in self.layers[:-1]:
+            x = F.leaky_relu(layer(x), inplace=True)
+        x = torch.sigmoid(self.layers[-1](x))
         return x.squeeze()

@@ -127,7 +127,7 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             with torch.no_grad():
                 fake = g(fixed_noise)
                 vutils.save_image(fake.detach(), 
-                                  f'{sample_dir}/fake_epoch_{epoch}.png',
+                                  f'{sample_dir}/{epoch}.png',
                                   normalize=True)
                 
             # If specified, save weights corresponding to generated samples.

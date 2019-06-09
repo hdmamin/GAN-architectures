@@ -51,24 +51,28 @@ def show_img(path):
     img = imread(path)
     fig = plt.figure(figsize=(9, 9))
     plt.imshow(img)
-    if 'epoch' in path:
-        num = path.split('.')[0].split('epoch_')[-1]
-        plt.title(f'Epoch {num}')
+    name = path.split('/')[-1]
+    plt.title(name)
     plt.show()
+
+
+def sorted_files(dir_):
+    """Pass in the name of a directory as a string and return a list of
+    file Path objects sorted by epoch number.
+    """
+    return sorted(list(Path(dir_).iterdir()),
+                  key=lambda x: int(x.parts[-1].split('.')[0]))
 
 
 def show_samples(sample_dir='samples'):
     """Show samples from each """
-    pattern = 'fake_epoch_'
-    files = list(Path(sample_dir).glob(pattern+'*'))
-    for f in sorted(files, 
-                    key=lambda x: int(str(x).split('.')[-2].split('_')[-1])):
+    for f in sorted_files(sample_dir):
         show_img(f)
 
-        
+
 def render_samples(path, out_file):
     """Render animation from all files in a directory of samples.
-    
+
     Parameters
     -----------
     path: str
@@ -79,9 +83,9 @@ def render_samples(path, out_file):
     matplotlib.rcParams['animation.convert_path'] = 'magick'
     fig = plt.figure(figsize=(9, 9))
     plt.axis('off')
-    arrs = [cv2.imread(str(file)) for file in Path(path).iterdir()]
+    arrs = [cv2.imread(str(file)) for file in sorted_files(path)]
     plots = [[plt.imshow(arr, animated=True)] for arr in arrs]
-    anim = animation.ArtistAnimation(fig, plots, blit=True, repeat_delay=10, 
+    anim = animation.ArtistAnimation(fig, plots, blit=True, repeat_delay=500,
                                      repeat=True)
     print(f'Writing file to {out_file}')
     anim.save(out_file, writer='imagemagick', fps=2)
