@@ -11,3 +11,4 @@ samples/
 weights/
 cifar/
 mnist/
+tutorial_dcgan.ipynb
