@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-# def conv_block(strided, c_in, c_out, f, stride, pad, bias=False, bn=True):
+# def old_conv_block(strided, c_in, c_out, f, stride, pad, bias=False, bn=True):
 #     """Create a conv or deconv block (the latter referring to a backward
 #     strided convolution) optionally followed by a batch norm layer.
 #     """
@@ -75,7 +75,7 @@ class ResBlock(nn.Module):
     leaky must still be applied on the output.
     """
 
-    def __init__(self, c_in, num_layers=2, leak=.02):
+    def __init__(self, c_in, num_layers=2, leak=.02, norm='bn'):
         """
         Parameters
         -----------
@@ -85,10 +85,14 @@ class ResBlock(nn.Module):
             Number of conv blocks inside the skip connection (default 2).
             ResNet paper notes that skipping a single layer did not show
             noticeable improvements.
+        leak: float
+            Slope of leaky relu where x < 0.
+        norm: str
+            'bn' for batch norm, 'in' for instance norm
         """
         super().__init__()
         self.leak = leak
-        self.layers = nn.ModuleList([conv_block(False, c_in, c_in, 3, 1, 1)
+        self.layers = nn.ModuleList([conv_block(False, c_in, c_in, 3, 1, 1, norm=norm)
                                      for i in range(num_layers)])
 
     def forward(self, x):
@@ -208,7 +212,7 @@ class Discriminator(BaseModel):
 class CycleGenerator(BaseModel):
     """CycleGAN Generator."""
 
-    def __init__(self, img_c=3, ngf=64, leak=.02):
+    def __init__(self, img_c=3, ngf=64, leak=.02, norm='bn'):
         """
         Parameters
         -----------
@@ -218,6 +222,10 @@ class CycleGenerator(BaseModel):
             # of channels in first convolutional layer.
         leak: float
             Slope of leaky relu where x < 0. Leak of 0 is regular relu.
+        norm: str
+            Type of normalization layer used for res blocks in the
+            transformer. Default is 'bn' for batch norm, but can also use
+            'in' for instance norm.
         """
         super().__init__()
         self.leak = leak
@@ -225,9 +233,9 @@ class CycleGenerator(BaseModel):
 
         # ENCODER
         # 3 x 64 x 64 -> 64 x 32 x 32
-        deconv1 = conv_block(False, img_c, ngf, f=4, stride=2, pad=1)
+        deconv1 = conv_block(True, img_c, ngf, f=4, stride=2, pad=1)
         # 64 x 32 x 32 -> 128 x 16 x 16
-        deconv2 = conv_block(False, ngf, ngf*2, 4, 2, 1)
+        deconv2 = conv_block(True, ngf, ngf*2, 4, 2, 1)
         self.encoder = nn.Sequential(deconv1,
                                      self.activation,
                                      deconv2,
@@ -235,9 +243,9 @@ class CycleGenerator(BaseModel):
 
         # TRANSFORMER
         # 128 x 16 x 16 -> 128 x 16 x 16
-        res1 = ResBlock(ngf*2, num_layers=2, leak=self.leak)
+        res1 = ResBlock(ngf*2, num_layers=2, leak=self.leak, norm=norm)
         # 128 x 16 x 16 -> 128 x 16 x 16
-        res2 = ResBlock(ngf*2, 2, self.leak)
+        res2 = ResBlock(ngf*2, 2, self.leak, norm)
         self.transformer = nn.Sequential(res1,
                                          self.activation,
                                          res2,
@@ -245,9 +253,9 @@ class CycleGenerator(BaseModel):
 
         # DECODER
         # 128 x 16 x 16 -> 64 x 32 x 32
-        deconv1 = conv_block(True, ngf*2, ngf, f=4, stride=2, pad=1)
+        deconv1 = conv_block(False, ngf*2, ngf, f=4, stride=2, pad=1)
         # 64 x 32 x 32 -> 3 x 64 x 64
-        deconv2 = conv_block(True, ngf, img_c, 4, 2, 1)
+        deconv2 = conv_block(False, ngf, img_c, 4, 2, 1)
         self.decoder = nn.Sequential(deconv1,
                                      self.activation,
                                      deconv2,
