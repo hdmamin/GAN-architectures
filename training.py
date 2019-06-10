@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.utils as vutils
 
-from models import Discriminator, Generator
+from models import Discriminator, Generator, CycleGenerator
 from config import *
 
 
@@ -266,10 +266,35 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
                               g_optimizer=g_optim.state_dict(),
                               d_optimizer=d_optim.state_dict(),
                               epoch=epoch)
-                torch.save(states, f'{weight_dir}/model_{epoch}.pth')
+                torch.save(states, f'{weight_dir}/{epoch}.pth')
         
     return dict(d_real_losses=d_real_losses, 
                 d_fake_losses=d_fake_losses,
                 g_losses=g_losses,
                 d_real_avg=d_real_avg,
                 d_fake_avg=d_fake_avg)
+
+
+def get_cycle_models(path=None):
+    """Get 2 cycle generators and 2 discriminators. If a path to a weight file
+    is provided, load state dicts from that file. Models are returned in train
+    mode.
+
+    Parameters
+    -----------
+    path: str
+        Optional - pass in path to weights file to load previously saved state
+        dicts, or exclude to get new models.
+    """
+    models = dict(g_xy=CycleGenerator(), g_yx=CycleGenerator(),
+                  d_x=Discriminator(), d_y=Discriminator())
+    if path:
+        states = torch.load(path)
+        print(f"Loading models from epoch {states['epoch']}.")
+    for name, model in models.items():
+        if path:
+            model.load_state_dict(states[name])
+        model.to(device)
+        model.train()
+    print('All models currently in training mode.')
+    return list(models.values())

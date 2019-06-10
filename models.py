@@ -4,21 +4,69 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def conv_block(strided, c_in, c_out, f, stride, pad, bias=False, bn=True):
+# def conv_block(strided, c_in, c_out, f, stride, pad, bias=False, bn=True):
+#     """Create a conv or deconv block (the latter referring to a backward
+#     strided convolution) optionally followed by a batch norm layer.
+#     """
+#     if strided:
+#         conv = nn.ConvTranspose2d(c_in, c_out, f, stride, pad, bias=bias)
+#     else:
+#         conv = nn.Conv2d(c_in, c_out, f, stride, pad, bias=bias)
+#     conv.weight.data.normal_(0.0, 0.02)
+#     layers = [conv]
+#     if bn:
+#         bn_ = nn.BatchNorm2d(c_out)
+#         bn_.weight.data.normal_(1.0, 0.02)
+#         bn_.bias.data.zero_()
+#         layers.append(bn_)
+#     return nn.Sequential(*layers)
+
+
+def conv_block(standard, c_in, c_out, f, stride, pad, bias=False, norm='bn'):
     """Create a conv or deconv block (the latter referring to a backward
     strided convolution) optionally followed by a batch norm layer.
+
+    Parameters
+    -----------
+    standard: bool
+        True for a standard convolution (e.g. downsampling height and width in
+        the discriminator), False for a backward strided convolution
+        (e.g. upsampling height and width via a deconvolutional block in the
+        generator).
+    c_in: int
+        # of input channels.
+    c_out: int
+        # of output channels.
+    f: int
+        Size of filter (fxf).
+    stride: int
+        Convolutional stride - how much to shift the filter with each
+        convolution.
+    pad: int
+        # of pixels of padding. 0 will give result in a valid convolution.
+    bias: bool
+        Specifies whether to include bias in conv layer. Default pytorch conv
+        layers do include bias but in many GAN implementations they don't.
+        Default False.
+    norm: str or None
+        'bn' for batch norm, 'in' for instance norm, None for neither.
     """
-    if strided:
-        conv = nn.ConvTranspose2d(c_in, c_out, f, stride, pad, bias=bias)
-    else:
+    if standard:
         conv = nn.Conv2d(c_in, c_out, f, stride, pad, bias=bias)
+    else:
+        conv = nn.ConvTranspose2d(c_in, c_out, f, stride, pad, bias=bias)
     conv.weight.data.normal_(0.0, 0.02)
     layers = [conv]
-    if bn:
-        bn_ = nn.BatchNorm2d(c_out)
-        bn_.weight.data.normal_(1.0, 0.02)
-        bn_.bias.data.zero_()
-        layers.append(bn_)
+
+    # Add layer of batch norm or instance norm if specified.
+    if norm == 'bn':
+        norm_layer = nn.BatchNorm2d(c_out)
+        norm_layer.weight.data.normal_(1.0, 0.02)
+        norm_layer.bias.data.zero_()
+    elif norm == 'in':
+        norm_layer = nn.InstanceNorm2d(c_out)
+    if norm:
+        layers.append(norm_layer)
     return nn.Sequential(*layers)
 
 
@@ -99,15 +147,15 @@ class Generator(BaseModel):
         """
         super().__init__()
         # 100 x 1 x 1 -> 512 x 4 x 4
-        deconv1 = conv_block(True, input_c, ngf*8, f=4, stride=1, pad=0)
+        deconv1 = conv_block(False, input_c, ngf*8, f=4, stride=1, pad=0)
         # 512 x 4 x 4 -> 256 x 8 x 8
-        deconv2 = conv_block(True, ngf*8, ngf*4, 4, 2, 1)
+        deconv2 = conv_block(False, ngf*8, ngf*4, 4, 2, 1)
         # 256 x 8 x 8 -> 128 x 16 x 16
-        deconv3 = conv_block(True, ngf*4, ngf*2, 4, 2, 1)
+        deconv3 = conv_block(False, ngf*4, ngf*2, 4, 2, 1)
         # 128 x 16 x 16 -> 64 x 32 x 32
-        deconv4 = conv_block(True, ngf*2, ngf, 4, 2, 1)
+        deconv4 = conv_block(False, ngf*2, ngf, 4, 2, 1)
         # 64 x 32 x 32 -> 3 x 64 x 64
-        deconv5 = conv_block(True, ngf, img_c, 4, 2, 1, bn=False)
+        deconv5 = conv_block(False, ngf, img_c, 4, 2, 1, norm=None)
 
         self.layers = nn.ModuleList([deconv1, deconv2, deconv3, deconv4,
                                      deconv5])
@@ -138,15 +186,15 @@ class Discriminator(BaseModel):
 
         # Dimensions for default values (most inputs resized to 3 x 64 x 64).
         # 3 x 64 x 64 -> 64 x 32 x 32
-        conv1 = conv_block(False, img_c, ndf, f=4, stride=2, pad=1, bn=False)
+        conv1 = conv_block(True, img_c, ndf, f=4, stride=2, pad=1, norm=None)
         # 64 x 32 x 32 -> 128 x 16 x 16
-        conv2 = conv_block(False, ndf, ndf*2, 4, 2, 1)
+        conv2 = conv_block(True, ndf, ndf*2, 4, 2, 1)
         # 128 x 16 x 16 -> 256 x 8 x 8
-        conv3 = conv_block(False, ndf*2, ndf*4, 4, 2, 1)
+        conv3 = conv_block(True, ndf*2, ndf*4, 4, 2, 1)
         # 256 x 8 x 8 -> 512 x 4 x 4
-        conv4 = conv_block(False, ndf*4, ndf*8, 4, 2, 1)
+        conv4 = conv_block(True, ndf*4, ndf*8, 4, 2, 1)
         # 512 x 4 x 4 -> 1 x 1 x 1
-        conv5 = conv_block(False, ndf*8, 1, 4, 1, 0, bn=False)
+        conv5 = conv_block(True, ndf*8, 1, 4, 1, 0, norm=None)
 
         self.layers = nn.ModuleList([conv1, conv2, conv3, conv4, conv5])
         
