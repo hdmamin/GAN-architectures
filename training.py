@@ -100,8 +100,8 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
                 real_avg = y_hat_real.mean().item()
                 d_fake_avg.append(fake_avg)
                 d_real_avg.append(real_avg)
-                d_fake_losses.append(d_loss_fake)
-                d_real_losses.append(d_loss_real)
+                d_fake_losses.append(d_loss_fake.item())
+                d_real_losses.append(d_loss_real.item())
 
                 # Backpropagation.
                 d_loss.backward()
@@ -118,7 +118,7 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             train_g = (epoch >= d_head_start)
             if train_g:
                 g_loss = criterion(d(fake), real_labels)
-                g_losses.append(g_loss)
+                g_losses.append(g_loss.item())
                 g_loss.backward()
                 g_optim.step()
         
@@ -228,8 +228,8 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             real_avg = y_hat_real.mean().item()
             d_fake_avg.append(fake_avg)
             d_real_avg.append(real_avg)
-            d_fake_losses.append(d_loss_fake)
-            d_real_losses.append(d_loss_real)
+            d_fake_losses.append(d_loss_fake.item())
+            d_real_losses.append(d_loss_real.item())
             
             # Backpropagation.
             d_loss.backward()
@@ -242,7 +242,7 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             ##################################################################
             g_optim.zero_grad()
             g_loss = criterion(d(fake), real_labels)
-            g_losses.append(g_loss)
+            g_losses.append(g_loss.item())
             g_loss.backward()
             g_optim.step()
         

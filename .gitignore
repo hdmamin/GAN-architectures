@@ -5,10 +5,10 @@ sketch_info/
 .DS_Store
 __pycache__/
 davinci_data/
-photo_samples
 *.gif
-samples/
-weights/
+*samples/
+*weights/
 cifar/
 mnist/
 tutorial_dcgan.ipynb
+final.*
