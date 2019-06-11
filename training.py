@@ -51,8 +51,8 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
         g = Generator().to(device)
         d = Discriminator().to(device)
         # For GANs, models should stay in train mode.
-        g.train()
-        d.train()
+    g.train()
+    d.train()
     
     # Define loss and optimizers.
     criterion = nn.BCELoss()
@@ -145,7 +145,7 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
                               g_optimizer=g_optim.state_dict(),
                               d_optimizer=d_optim.state_dict(),
                               epoch=epoch)
-                torch.save(states, f'{weight_dir}/model_{epoch}.pth')
+                torch.save(states, f'{weight_dir}/{epoch}.pth')
         
     return dict(d_real_losses=d_real_losses, 
                 d_fake_losses=d_fake_losses,
@@ -182,8 +182,9 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     if not (d or g):
         g = Generator().to(device)
         d = Discriminator().to(device)
-        g.train()
-        d.train()
+    # For GANs, models should stay in train mode.
+    g.train()
+    d.train()
     
     # Define loss and optimizers.
     criterion = nn.BCELoss()
@@ -256,7 +257,7 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             with torch.no_grad():
                 fake = g(fixed_noise)
                 vutils.save_image(fake.detach(), 
-                                  f'{sample_dir}/fake_epoch_{epoch}.png',
+                                  f'{sample_dir}/{epoch}.png',
                                   normalize=True)
                 
             # If specified, save weights corresponding to generated samples.

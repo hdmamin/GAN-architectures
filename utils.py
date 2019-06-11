@@ -26,7 +26,7 @@ def show_batch(dl, limit=64):
     plt.show()
 
 
-def plot_output(output):
+def plot_losses(output):
     """Plot losses and average predictions by mini batch."""
     # Plot losses by mini batch.
     fig, ax = plt.subplots(2, 1, figsize=(9, 6))
