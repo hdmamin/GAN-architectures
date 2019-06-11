@@ -207,7 +207,7 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, quiet_mode=True,
     # Suppress printed output to 20 total times - think it's slowing down nb.
     print_freq = 1
     if quiet_mode:
-        print_freq = min(1, epochs // 20)
+        print_freq = max(1, epochs // 20)
         
     # Train D and G.
     for epoch in range(epochs):
