@@ -11,6 +11,9 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
               weight_dir=None, d=None, g=None, d_head_start=0, gd_ratio=1):
     """Train generator and discriminator with Adam.
     
+    NOTE: SOME CHANGES IN TRAIN MAY NOT BE REFLECTED HERE - CHECK BEFORE USING.
+    ALSO, GAN HACKS SUGGESTS TRYING TO TUNE GD_RATIO IS A HOPELESS TASK.
+    
     IN PROGRESS - getting errors suggesting I need retain_graph=True in 
     G loss.backward()? Seems to be caused by d_head_start. Didn't get to 
     dg_ratio yet, so that could cause the same issue. Not sure why this
@@ -154,8 +157,8 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
                 d_fake_avg=d_fake_avg)
 
 
-def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
-          weight_dir=None, d=None, g=None):
+def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, quiet_mode=True,
+          sample_dir='samples', weight_dir=None, d=None, g=None):
     """Train generator and discriminator with Adam.
     
     Parameters
@@ -201,6 +204,11 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     d_fake_avg = []
     g_losses = []
 
+    # Suppress printed output to 20 total times - think it's slowing down nb.
+    print_freq = 1
+    if quiet_mode:
+        print_freq = min(1, epochs // 20)
+        
     # Train D and G.
     for epoch in range(epochs):
         for i, (x, y) in enumerate(dl):
@@ -247,10 +255,11 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             g_optim.step()
         
         # Print losses.
-        print(f'Epoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
-        print(f'D loss (real): {d_loss_real:.4f}\t', end='')
-        print(f'D loss (fake): {d_loss_fake:.4f}')
-        print(f'G loss: {g_loss:.4f}\n')
+        if epoch % print_freq == 0:
+            print(f'Epoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
+            print(f'D loss (real): {d_loss_real:.4f}\t', end='')
+            print(f'D loss (fake): {d_loss_fake:.4f}')
+            print(f'G loss: {g_loss:.4f}\n')
 
         # Generate sample from fixed noise at end of every fifth epoch.
         if epoch % sample_freq == 0:
@@ -299,3 +308,156 @@ def get_cycle_models(path=None):
         model.train()
     print('All models currently in training mode.')
     return list(models.values())
+
+
+def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y, 
+                    weight_dir=None, sample_freq=10, lr=2e-4, b1=.5,
+                    use_labels=False, quiet_mode=True, load_path=None,
+                    models=None):
+    """Train cycleGAN with Adam optimizer. The naming conventin G_xy will be
+    used to refer to a generator that converts from set x to set y, while
+    D_x refers to a discriminator that classifies examples as actually 
+    belonging to set x (class 1) or being a model-generated example (class 0).
+    
+    Parameters
+    -----------
+    use_labels: bool
+        Specifies whether to use class labels (i.e. horse, zebra, giraffe). If
+        False, D only tries to predict if it is a real or fake example 
+        (e.g. photo or sketch2photo).
+    load_path: str or None
+        If str, models will load state dicts from the provided file. If None,
+        new models will be created.
+    models: list or None
+        Instead of providing a load path, we can also pass in a list of models
+        in the form [G_xy, G_yx, D_x, D_y]. Either load_path or models 
+        (or both) should be None.
+    """
+    # Create models.
+    if not models:
+        G_xy, G_yx, D_x, D_y = get_cycle_models(load_path)
+    else:
+        for model in models:
+            model.to(device)
+            model.train()
+        G_xy, G_yx, D_x, D_y = models
+    
+    # Create optimizers.
+    optim_g = torch.optim.Adam(chain(G_xy.parameters(), G_yx.parameters()), 
+                               lr, betas=(b1, .999))
+    optim_d = torch.optim.Adam(chain(D_x.parameters(), D_y.parameters()),
+                               lr, betas=(b1, .999))    
+    
+    # Define loss function.
+    if use_labels:
+        criterion = nn.BCELoss(reduction='mean')
+    else:
+        criterion = nn.MSELoss(reduction='mean')
+        
+    # Set fixed examples for sample generation.
+    fixed_x = next(iter(x_dl))[0]
+    fixed_y = next(iter(y_dl))[0]
+    
+    # Suppress printed output to 20 total times to avoid slowing down nb.
+    print_freq = 1
+    if quiet_mode:
+        print_freq = max(1, epochs // 20)
+    
+    # Store lists of losses.
+    stats = defaultdict(list)
+    for epoch in range(epochs):
+        G_xy.train()
+        G_yx.train()
+        D_x.train()
+        D_y.train()
+        
+        for i, ((x, x_labels), (y, y_labels)) in enumerate(zip(x_dl, y_dl)):
+            x = x.to(device)
+            y = y.to(device)
+            batch_len = x.shape[0]
+            # X has less data so DL runs out and last batch is small. FIX?
+            if batch_len != y.shape[0]:
+                continue
+            labels_real = torch.ones(batch_len, device=device)
+            labels_fake = torch.zeros(batch_len, device=device)
+            
+            ##################################################################
+            # Train D_x and D_y.
+            ##################################################################
+            # Train D's on real images.
+            optim_d.zero_grad()
+            pred_x, pred_y = D_x(x), D_y(y)
+            loss_dx = criterion(pred_x, labels_real)
+            loss_dy = criterion(pred_y, labels_real)
+            loss_d_real = loss_dx + loss_dy
+            stats['d_real'].append(loss_d_real.item())
+            loss_d_real.backward()
+            optim_d.step()
+            
+            # Train D's on fake images.
+            optim_d.zero_grad()
+            x_fake, y_fake = G_yx(y), G_xy(x)
+            pred_x, pred_y = D_x(x_fake), D_y(y_fake)
+            loss_dx_fake = criterion(pred_x, labels_fake)
+            loss_dy_fake = criterion(pred_y, labels_fake)
+            loss_d_fake = loss_dx_fake + loss_dy_fake
+            stats['d_fake'].append(loss_d_fake.item())
+            loss_d_fake.backward()
+            optim_d.step()
+            
+            ##################################################################
+            # Train G_xy and G_yx.
+            ################################################################## 
+            # Stage 1: x -> y -> x
+            optim_g.zero_grad()
+            y_fake = G_xy(x)
+            pred_y = D_y(y_fake)
+            loss_g = criterion(pred_y, labels_real)
+            
+            x_recon = G_yx(y_fake)
+            pred_x = D_x(x_recon)
+            loss_g_cycle = criterion(pred_x, labels_real)
+            loss_g_total = loss_g + loss_g_cycle
+            stats['g_xyx'].append(loss_g_total.item())
+            loss_g_total.backward()
+            optim_g.step()
+            
+            # Stage2: y -> x -> y
+            optim_g.zero_grad()
+            x_fake = G_yx(y)
+            pred_x = D_x(x_fake)
+            loss_g = criterion(pred_x, labels_real)
+            
+            y_recon = G_xy(x_fake)
+            pred_y = D_y(y_recon)
+            loss_g_cycle = criterion(pred_y, labels_real)
+            loss_g_total = loss_g + loss_g_cycle
+            stats['g_yxy'].append(loss_g_total.item())
+            loss_g_total.backward()
+            optim_g.step()
+        
+        # Generate samples to save at specified intervals.
+        if epoch % sample_freq == 0:
+            sample_x = G_yx(y).detach()
+            sample_y = G_yx(x).detach()
+            vutils.save_image(sample_x, f'{sample_dir_x}/{epoch}.png')
+            vutils.save_image(sample_y, f'{sample_dir_y}/{epoch}.png')
+            
+       # If specified, save weights corresponding to generated samples.
+        if weight_dir:
+            states = dict(g_xy=G_xy.state_dict(),
+                          g_yx=G_yx.state_dict(),
+                          dx=D_x.state_dict(),
+                          dy=D_y.state_dict(),
+                          epoch=epoch)
+            torch.save(states, f'{weight_dir}/{epoch}.pth') 
+                
+        # Print results for last mini batch of epoch.
+        if epoch % print_freq == 0:
+            print(f'Epoch [{epoch+1}/{epochs}])')
+            print(f"D real loss: {loss_d_real:.3f}\t"
+                  f"D fake loss: {loss_d_fake:.3f}")
+            print(f"G xyx loss: {stats['g_xyx'][-1]:.3f}\t"
+                  f"G yxy fake: {stats['g_yxy'][-1]:.3f}\n")
+            
+    return stats

@@ -101,6 +101,25 @@ class ResBlock(nn.Module):
             x_out = F.leaky_relu(layer(x_out), self.leak)
         return x + x_out
 
+    
+class GRelu(nn.Module):
+    """Generic ReLU."""
+    
+    def __init__(self, leak=0, max_val=float('inf'), sub=0):
+        super().__init__()
+        self.leak = leak
+        self.max_val = max_val
+        self.sub = sub
+        
+    def forward(self, x):
+        """Check which operations are necessary to save computation."""
+        x = F.leaky_relu(x, self.leak) if self.leak else F.relu(x)
+        if self.max_val:
+            x = torch.clamp(x, max=self.max_val)
+        if self.sub:
+            x -= self.sub
+        return x
+
 
 class BaseModel(nn.Module):
     """Base model that adds several functions to nn.Module
@@ -271,3 +290,6 @@ class CycleGenerator(BaseModel):
         for group in self.groups:
             x = group(x)
         return x
+    
+    
+JRelu = GRelu(leak=.1, sub=.4, max_val=6)

@@ -80,12 +80,12 @@ cifar_dl = DataLoader(cifar_ds, batch_size=bs, shuffle=True,
                       num_workers=workers)
 
 # MNIST transforms and dataset (must download the first time we run code)
-mnist_tfms = transforms.Compose([transforms.Resize(img_size),
-                                 transforms.ToTensor(),
-                                 transforms.Normalize((0.1307,), (0.3081,))])
-mnist_ds = datasets.MNIST(root='mnist',
-                          download=False,
-                          train=True,
-                          transform=mnist_tfms)
-mnist_dl = DataLoader(mnist_ds, batch_size=bs, shuffle=True,
-                      num_workers=workers)
+# mnist_tfms = transforms.Compose([transforms.Resize(img_size),
+#                                  transforms.ToTensor(),
+#                                  transforms.Normalize((0.1307,), (0.3081,))])
+# mnist_ds = datasets.MNIST(root='mnist',
+#                           download=False,
+#                           train=True,
+#                           transform=mnist_tfms)
+# mnist_dl = DataLoader(mnist_ds, batch_size=bs, shuffle=True,
+#                       num_workers=workers)

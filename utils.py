@@ -60,7 +60,7 @@ def sorted_files(dir_):
     """Pass in the name of a directory as a string and return a list of
     file Path objects sorted by epoch number.
     """
-    return sorted(list(Path(dir_).iterdir()),
+    return sorted([f for f in Path(dir_).iterdir() if not str(f).startswith('.DS')],
                   key=lambda x: int(x.parts[-1].split('.')[0]))
 
 

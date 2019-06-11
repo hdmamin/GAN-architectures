@@ -6,9 +6,10 @@ sketch_info/
 __pycache__/
 davinci_data/
 *.gif
-*samples/
+*samples*/
 *weights/
 cifar/
 mnist/
 tutorial_dcgan.ipynb
 final.*
+edges2shoes
