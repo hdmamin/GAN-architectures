@@ -89,3 +89,8 @@ def render_samples(path, out_file):
                                      repeat=True)
     print(f'Writing file to {out_file}')
     anim.save(out_file, writer='imagemagick', fps=2)
+
+
+def stats(x):
+    """Quick wrapper to get mean and standard deviation of a tensor."""
+    return round(x.mean().item(), 4), round(x.std().item(), 4)
