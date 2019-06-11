@@ -77,7 +77,8 @@ class ResBlock(nn.Module):
     leaky must still be applied on the output.
     """
 
-    def __init__(self, c_in, num_layers=2, leak=.02, norm='bn'):
+    def __init__(self, c_in, activation=nn.LeakyReLU(.02), num_layers=2,
+                 norm='bn'):
         """
         Parameters
         -----------
@@ -93,14 +94,14 @@ class ResBlock(nn.Module):
             'bn' for batch norm, 'in' for instance norm
         """
         super().__init__()
-        self.leak = leak
         self.layers = nn.ModuleList([conv_block(False, c_in, c_in, 3, 1, 1, norm=norm)
                                      for i in range(num_layers)])
+        self.activation = activation
 
     def forward(self, x):
         x_out = x
         for layer in self.layers:
-            x_out = F.leaky_relu(layer(x_out), self.leak)
+            x_out = self.activation(layer(x_out))
         return x + x_out
 
 
@@ -128,7 +129,7 @@ class GRelu(nn.Module):
 
 class BaseModel(nn.Module):
     """Base model that adds several functions to nn.Module
-    for convenience and diagnostics. TESTING
+    for convenience and diagnostics.
     """
 
     def __init__(self):
@@ -151,15 +152,15 @@ class BaseModel(nn.Module):
         fig, ax = plt.subplots(n_layers, figsize=(8, n_layers * 1.25))
         for i, p in enumerate(self.parameters()):
             ax[i].hist(p.data.flatten())
-            ax[i].set_title(p.shape)
+            ax[i].set_title(f'Shape: {p.shape} Stats: {stats(p.data)}')
         plt.tight_layout()
         plt.show()
 
 
 class Generator(BaseModel):
     """DCGAN Generator"""
-    
-    def __init__(self, input_c=100, img_c=3, ngf=64):
+
+    def __init__(self, input_c=100, img_c=3, ngf=64, act=GRelu(), norm='bn'):
         """
         Parameters
         -----------
@@ -170,33 +171,41 @@ class Generator(BaseModel):
         ngf: int
             # of filters to output in last deconv block before the final
             reduction to img_c channels.
+        act: nn.Module
+            Default activation of GRelu() gives us a standard relu, as used in
+            the paper. GRelu(.02) gives us a leaky relu with leak of .02, like
+            for the discriminator. JRelu (already instantiated so exclude
+            parentheses) gives a leak of .1, sub of .4, and max of 6.0.
+        norm: str
+            'bn' for batch norm (default), 'in' for instance norm.
         """
         super().__init__()
         # 100 x 1 x 1 -> 512 x 4 x 4
-        deconv1 = conv_block(False, input_c, ngf*8, f=4, stride=1, pad=0)
+        deconv1 = conv_block(False, input_c, ngf * 8, f=4, stride=1, pad=0)
         # 512 x 4 x 4 -> 256 x 8 x 8
-        deconv2 = conv_block(False, ngf*8, ngf*4, 4, 2, 1)
+        deconv2 = conv_block(False, ngf * 8, ngf * 4, 4, 2, 1, norm=norm)
         # 256 x 8 x 8 -> 128 x 16 x 16
-        deconv3 = conv_block(False, ngf*4, ngf*2, 4, 2, 1)
+        deconv3 = conv_block(False, ngf * 4, ngf * 2, 4, 2, 1, norm=norm)
         # 128 x 16 x 16 -> 64 x 32 x 32
-        deconv4 = conv_block(False, ngf*2, ngf, 4, 2, 1)
+        deconv4 = conv_block(False, ngf * 2, ngf, 4, 2, 1, norm=norm)
         # 64 x 32 x 32 -> 3 x 64 x 64
         deconv5 = conv_block(False, ngf, img_c, 4, 2, 1, norm=None)
 
         self.layers = nn.ModuleList([deconv1, deconv2, deconv3, deconv4,
                                      deconv5])
-        
+        self.activation = act
+
     def forward(self, x):
         for layer in self.layers[:-1]:
-            x = F.relu(layer(x), inplace=True)
+            x = self.activation(layer(x))
         x = torch.tanh(self.layers[-1](x))
         return x
 
-    
+
 class Discriminator(BaseModel):
     """DCGAN discriminator."""
-    
-    def __init__(self, ndf=64, img_c=3, leak=.02):
+
+    def __init__(self, ndf=64, img_c=3, act=GRelu(.02), norm='bn'):
         """
         Parameters
         -----------
@@ -204,29 +213,34 @@ class Discriminator(BaseModel):
             # of filters in first conv layer.
         img_c: int
             # of channels in input image.
-        leak: float
-            Slope of leaky relu where x < 0.
+        act: nn.Module
+            Default activation of GRelu(.02) gives us a leaky relu with a leak
+            of .02, as recommended in the paper. JRelu (already instantiated
+            so exclude parentheses) gives a leak of .1, sub of .4, and max of
+            6.0. GRelu() gives a standard ReLU.
+        norm: str
+            'bn' for batch norm (default), 'in' for instance norm.
         """
         super().__init__()
-        self.leak = leak
 
         # Dimensions for default values (most inputs resized to 3 x 64 x 64).
         # 3 x 64 x 64 -> 64 x 32 x 32
         conv1 = conv_block(True, img_c, ndf, f=4, stride=2, pad=1, norm=None)
         # 64 x 32 x 32 -> 128 x 16 x 16
-        conv2 = conv_block(True, ndf, ndf*2, 4, 2, 1)
+        conv2 = conv_block(True, ndf, ndf * 2, 4, 2, 1, norm=norm)
         # 128 x 16 x 16 -> 256 x 8 x 8
-        conv3 = conv_block(True, ndf*2, ndf*4, 4, 2, 1)
+        conv3 = conv_block(True, ndf * 2, ndf * 4, 4, 2, 1, norm=norm)
         # 256 x 8 x 8 -> 512 x 4 x 4
-        conv4 = conv_block(True, ndf*4, ndf*8, 4, 2, 1)
+        conv4 = conv_block(True, ndf * 4, ndf * 8, 4, 2, 1, norm=norm)
         # 512 x 4 x 4 -> 1 x 1 x 1
-        conv5 = conv_block(True, ndf*8, 1, 4, 1, 0, norm=None)
+        conv5 = conv_block(True, ndf * 8, 1, 4, 1, 0, norm=None)
 
         self.layers = nn.ModuleList([conv1, conv2, conv3, conv4, conv5])
-        
+        self.activation = act
+
     def forward(self, x):
         for layer in self.layers[:-1]:
-            x = F.leaky_relu(layer(x), self.leak, inplace=True)
+            x = self.activation(layer(x))
         x = torch.sigmoid(self.layers[-1](x))
         return x.squeeze()
 
@@ -234,7 +248,7 @@ class Discriminator(BaseModel):
 class CycleGenerator(BaseModel):
     """CycleGAN Generator."""
 
-    def __init__(self, img_c=3, ngf=64, leak=.02, norm='bn'):
+    def __init__(self, img_c=3, ngf=64, norm='bn', act=GRelu(.02)):
         """
         Parameters
         -----------
@@ -242,16 +256,18 @@ class CycleGenerator(BaseModel):
             # of channels of input image.
         ngf: int
             # of channels in first convolutional layer.
-        leak: float
-            Slope of leaky relu where x < 0. Leak of 0 is regular relu.
         norm: str
             Type of normalization layer used for res blocks in the
             transformer. Default is 'bn' for batch norm, but can also use
             'in' for instance norm.
+        act: nn.Module
+            Default activation of GRelu(.02) gives us a leaky relu with a leak
+            of .02, as recommended in the paper. JRelu (already instantiated
+            so exclude parentheses) gives a leak of .1, sub of .4, and max of
+            6.0. GRelu() gives a standard ReLU.
         """
         super().__init__()
-        self.leak = leak
-        self.activation = nn.LeakyReLU(self.leak)
+        self.activation = act
 
         # ENCODER
         # 3 x 64 x 64 -> 64 x 32 x 32
@@ -265,9 +281,9 @@ class CycleGenerator(BaseModel):
 
         # TRANSFORMER
         # 128 x 16 x 16 -> 128 x 16 x 16
-        res1 = ResBlock(ngf*2, num_layers=2, leak=self.leak, norm=norm)
+        res1 = ResBlock(ngf*2, self.activation, num_layers=2, norm=norm)
         # 128 x 16 x 16 -> 128 x 16 x 16
-        res2 = ResBlock(ngf*2, 2, self.leak, norm)
+        res2 = ResBlock(ngf*2, self.activation, 2, norm)
         self.transformer = nn.Sequential(res1,
                                          self.activation,
                                          res2,
