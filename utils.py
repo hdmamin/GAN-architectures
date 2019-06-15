@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 import numpy as np
 from pathlib import Path
-from skimage.io import imread
 import torchvision.utils as vutils
 
 
@@ -43,14 +42,20 @@ def plot_losses(output):
     plt.tight_layout()
     plt.legend()
     plt.show()
+    
+    
+def read_img(path):
+    """Load image using openCV and convert to RGB color space."""
+    path = str(path)
+    return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
 
-
+    
 def show_img(path):
     """Load image from path and display."""
-    path = str(path)
-    img = imread(path)
+    img = read_img(path)
     fig = plt.figure(figsize=(9, 9))
     plt.imshow(img)
+    plt.axis('off')
     name = path.split('/')[-1]
     plt.title(name)
     plt.show()
