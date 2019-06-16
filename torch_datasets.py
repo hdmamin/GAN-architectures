@@ -89,3 +89,7 @@ cifar_dl = DataLoader(cifar_ds, batch_size=bs, shuffle=True,
 #                           transform=mnist_tfms)
 # mnist_dl = DataLoader(mnist_ds, batch_size=bs, shuffle=True,
 #                       num_workers=workers)
+
+# Celeb A dataset.
+celeb_ds = ImageFolder('celeba', transform=tfms)
+celeb_dl = DataLoader(celeb_ds, batch_size=bs, shuffle=True, num_workers=workers)
