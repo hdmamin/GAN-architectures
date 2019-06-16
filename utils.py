@@ -23,6 +23,20 @@ def show_batch(dl, limit=64):
                                              nrow=8), (1, 2, 0)))
     plt.axis('off')
     plt.show()
+    
+    
+def save_real_batch(dl, path='samples'):
+    """Saves a real batch of images in the same grid format as the generated
+    images for easy comparison.
+      
+    Parameters
+    -----------
+    dl: DataLoader
+    path: str
+        Directory to save image grid in.
+    """
+    batch = next(iter(dl))
+    vutils.save_image(batch[0], f'{path}/real_batch.png', normalize=True)
 
 
 def plot_losses(output):
