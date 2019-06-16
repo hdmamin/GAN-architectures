@@ -13,3 +13,4 @@ mnist/
 tutorial_dcgan.ipynb
 final.*
 edges2shoes
+celeba/
