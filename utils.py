@@ -66,6 +66,7 @@ def read_img(path):
     
 def show_img(path):
     """Load image from path and display."""
+    path = str(path)
     img = read_img(path)
     fig = plt.figure(figsize=(9, 9))
     plt.imshow(img)
@@ -75,7 +76,7 @@ def show_img(path):
     plt.show()
 
 
-def sorted_files(dir_):
+def sorted_paths(dir_):
     """Pass in the name of a directory as a string and return a list of
     file Path objects sorted by epoch number.
     """
@@ -85,7 +86,7 @@ def sorted_files(dir_):
 
 def show_samples(sample_dir='samples'):
     """Show samples from each """
-    for f in sorted_files(sample_dir):
+    for f in sorted_paths(sample_dir):
         show_img(f)
 
 
@@ -102,7 +103,7 @@ def render_samples(path, out_file):
     matplotlib.rcParams['animation.convert_path'] = 'magick'
     fig = plt.figure(figsize=(9, 9))
     plt.axis('off')
-    arrs = [cv2.imread(str(file)) for file in sorted_files(path)]
+    arrs = [read_img(file) for file in sorted_paths(path)]
     plots = [[plt.imshow(arr, animated=True)] for arr in arrs]
     anim = animation.ArtistAnimation(fig, plots, blit=True, repeat_delay=500,
                                      repeat=True)

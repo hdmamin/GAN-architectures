@@ -6,24 +6,6 @@ import torch.nn.functional as F
 from utils import stats
 
 
-# def old_conv_block(strided, c_in, c_out, f, stride, pad, bias=False, bn=True):
-#     """Create a conv or deconv block (the latter referring to a backward
-#     strided convolution) optionally followed by a batch norm layer.
-#     """
-#     if strided:
-#         conv = nn.ConvTranspose2d(c_in, c_out, f, stride, pad, bias=bias)
-#     else:
-#         conv = nn.Conv2d(c_in, c_out, f, stride, pad, bias=bias)
-#     conv.weight.data.normal_(0.0, 0.02)
-#     layers = [conv]
-#     if bn:
-#         bn_ = nn.BatchNorm2d(c_out)
-#         bn_.weight.data.normal_(1.0, 0.02)
-#         bn_.bias.data.zero_()
-#         layers.append(bn_)
-#     return nn.Sequential(*layers)
-
-
 def conv_block(standard, c_in, c_out, f, stride, pad, bias=False, norm='bn'):
     """Create a conv or deconv block (the latter referring to a backward
     strided convolution) optionally followed by a batch norm layer.
@@ -72,6 +54,28 @@ def conv_block(standard, c_in, c_out, f, stride, pad, bias=False, norm='bn'):
     return nn.Sequential(*layers)
 
 
+class GRelu(nn.Module):
+    """Generic ReLU."""
+
+    def __init__(self, leak=0.0, max=float('inf'), sub=0.0):
+        super().__init__()
+        self.leak = leak
+        self.max = max
+        self.sub = sub
+
+    def forward(self, x):
+        """Check which operations are necessary to save computation."""
+        x = F.leaky_relu(x, self.leak) if self.leak else F.relu(x)
+        if self.sub:
+            x -= self.sub
+        if self.max:
+            x = torch.clamp(x, max=self.max)
+        return x
+
+    def __repr__(self):
+        return f'GReLU(leak={self.leak}, max={self.max}, sub={self.sub})'
+    
+    
 class ResBlock(nn.Module):
     """Residual block to be used in CycleGenerator. Note that the relu or 
     leaky must still be applied on the output.
@@ -102,28 +106,6 @@ class ResBlock(nn.Module):
         for layer in self.layers:
             x_out = self.activation(layer(x_out))
         return x + x_out
-
-
-class GRelu(nn.Module):
-    """Generic ReLU."""
-
-    def __init__(self, leak=0.0, max=float('inf'), sub=0.0):
-        super().__init__()
-        self.leak = leak
-        self.max = max
-        self.sub = sub
-
-    def forward(self, x):
-        """Check which operations are necessary to save computation."""
-        x = F.leaky_relu(x, self.leak) if self.leak else F.relu(x)
-        if self.sub:
-            x -= self.sub
-        if self.max:
-            x = torch.clamp(x, max=self.max)
-        return x
-
-    def __repr__(self):
-        return f'GReLU(leak={self.leak}, max={self.max}, sub={self.sub})'
 
 
 class BaseModel(nn.Module):
