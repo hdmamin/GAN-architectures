@@ -4,6 +4,7 @@ import torch
 root_photo = 'sketch_data/photo/tx_000100000000'
 root_sketch = 'sketch_data/sketch/tx_000100000000'
 root_dv = 'davinci_data/train'
+root_celeb = 'celeba'
 root_small = root_photo + '/tmp'  # Contains camel, giraffe, horse, zebra
 
 bs = 64                # Batch size (paper uses 128).

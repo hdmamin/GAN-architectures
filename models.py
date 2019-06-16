@@ -81,7 +81,7 @@ class ResBlock(nn.Module):
     leaky must still be applied on the output.
     """
     
-    def __init__(self, c_in, activation=GRelu(.02), num_layers=2, norm='bn'):
+    def __init__(self, c_in, activation=GRelu(.2), num_layers=2, norm='bn'):
         """
         Parameters
         -----------
@@ -154,7 +154,7 @@ class Generator(BaseModel):
             reduction to img_c channels.
         act: nn.Module
             Default activation of GRelu() gives us a standard relu, as used in
-            the paper. GRelu(.02) gives us a leaky relu with leak of .02, like
+            the paper. GRelu(.2) gives us a leaky relu with leak of .2, like
             for the discriminator. JRelu (already instantiated so exclude
             parentheses) gives a leak of .1, sub of .4, and max of 6.0.
         norm: str
@@ -186,7 +186,7 @@ class Generator(BaseModel):
 class Discriminator(BaseModel):
     """DCGAN discriminator."""
 
-    def __init__(self, ndf=64, img_c=3, act=GRelu(.02), norm='bn'):
+    def __init__(self, ndf=64, img_c=3, act=GRelu(.2), norm='bn'):
         """
         Parameters
         -----------
@@ -195,8 +195,8 @@ class Discriminator(BaseModel):
         img_c: int
             # of channels in input image.
         act: nn.Module
-            Default activation of GRelu(.02) gives us a leaky relu with a leak
-            of .02, as recommended in the paper. JRelu (already instantiated
+            Default activation of GRelu(.2) gives us a leaky relu with a leak
+            of .2, as recommended in the paper. JRelu (already instantiated
             so exclude parentheses) gives a leak of .1, sub of .4, and max of
             6.0. GRelu() gives a standard ReLU.
         norm: str
@@ -229,7 +229,7 @@ class Discriminator(BaseModel):
 class CycleGenerator(BaseModel):
     """CycleGAN Generator."""
 
-    def __init__(self, img_c=3, ngf=64, norm='bn', act=GRelu(.02)):
+    def __init__(self, img_c=3, ngf=64, norm='bn', act=GRelu(.2)):
         """
         Parameters
         -----------
@@ -242,8 +242,8 @@ class CycleGenerator(BaseModel):
             transformer. Default is 'bn' for batch norm, but can also use
             'in' for instance norm.
         act: nn.Module
-            Default activation of GRelu(.02) gives us a leaky relu with a leak
-            of .02, as recommended in the paper. JRelu (already instantiated
+            Default activation of GRelu(.2) gives us a leaky relu with a leak
+            of .2, as recommended in the paper. JRelu (already instantiated
             so exclude parentheses) gives a leak of .1, sub of .4, and max of
             6.0. GRelu() gives a standard ReLU.
         """

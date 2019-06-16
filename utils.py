@@ -7,7 +7,7 @@ from pathlib import Path
 import torchvision.utils as vutils
 
 
-def show_batch(dl, limit=64):
+def show_batch(dl, limit=64, size=10):
     """Display a batch of images.
     
     Parameters
@@ -17,10 +17,10 @@ def show_batch(dl, limit=64):
         Max # of images to display (since we usually don't need to see all 128
         images in the batch).
     """
-    batch = next(iter(dl))
-    fig, ax = plt.subplots(figsize=(10, 10))
-    plt.imshow(np.transpose(vutils.make_grid(batch[0][:limit], normalize=True, 
-                                             nrow=8), (1, 2, 0)))
+    batch = next(iter(dl))[0]
+    fig, ax = plt.subplots(figsize=(size, size))
+    grid = vutils.make_grid(batch[:limit], normalize=True, nrow=8)
+    plt.imshow(np.transpose(grid, (1, 2, 0)))
     plt.axis('off')
     plt.show()
     
@@ -80,7 +80,7 @@ def sorted_paths(dir_):
     """Pass in the name of a directory as a string and return a list of
     file Path objects sorted by epoch number.
     """
-    return sorted([f for f in Path(dir_).iterdir() if not str(f).startswith('.DS')],
+    return sorted([f for f in Path(dir_).iterdir() if str(f.parts[-1])[0].isnumeric()],
                   key=lambda x: int(x.parts[-1].split('.')[0]))
 
 

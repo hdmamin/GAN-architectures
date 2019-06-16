@@ -440,8 +440,10 @@ def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
         if epoch % sample_freq == 0:
             sample_x = G_yx(y).detach()
             sample_y = G_yx(x).detach()
-            vutils.save_image(sample_x, f'{sample_dir_x}/{epoch}.png')
-            vutils.save_image(sample_y, f'{sample_dir_y}/{epoch}.png')
+            vutils.save_image(sample_x, f'{sample_dir_x}/{epoch}.png', 
+                              normalize=True)
+            vutils.save_image(sample_y, f'{sample_dir_y}/{epoch}.png', 
+                              normalize=True)
             
        # If specified, save weights corresponding to generated samples.
         if weight_dir:

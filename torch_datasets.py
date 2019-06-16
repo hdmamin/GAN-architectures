@@ -90,6 +90,11 @@ cifar_dl = DataLoader(cifar_ds, batch_size=bs, shuffle=True,
 # mnist_dl = DataLoader(mnist_ds, batch_size=bs, shuffle=True,
 #                       num_workers=workers)
 
-# Celeb A dataset.
-celeb_ds = ImageFolder('celeba', transform=tfms)
+# Celeb A dataset. Non-square images require additional cropping step.
+celeb_tfms = transforms.Compose([transforms.Resize(img_size),
+                                 transforms.CenterCrop(img_size),
+                                 transforms.ToTensor(),
+                                 transforms.Normalize([.5, .5, .5],
+                                                      [.5, .5, .5])])
+celeb_ds = ImageFolder(root_celeb, transform=celeb_tfms)
 celeb_dl = DataLoader(celeb_ds, batch_size=bs, shuffle=True, num_workers=workers)
