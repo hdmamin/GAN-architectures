@@ -1,3 +1,5 @@
+from collections import defaultdict
+from itertools import chain
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -53,15 +55,15 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     if not (d or g):
         g = Generator().to(device)
         d = Discriminator().to(device)
-        # For GANs, models should stay in train mode.
+    # For GANs, models should stay in train mode.
     g.train()
     d.train()
-    
+
     # Define loss and optimizers.
     criterion = nn.BCELoss()
     d_optim = torch.optim.Adam(d.parameters(), lr=lr, betas=(b1, .999))
     g_optim = torch.optim.Adam(g.parameters(), lr=lr, betas=(b1, .999))
-    
+
     # Noise used for sample images, not training.
     fixed_noise = torch.randn(dl.batch_size, 100, 1, 1, device=device)
 
@@ -72,6 +74,11 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     d_fake_avg = []
     g_losses = []
 
+    # Suppress printed output to 20 total times - think it's slowing down nb.
+    print_freq = 1
+    if quiet_mode:
+        print_freq = max(1, epochs // 20)
+
     # Train D and G.
     for epoch in range(epochs):
         for i, (x, y) in enumerate(dl):
@@ -80,14 +87,13 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             real_labels = torch.ones(bs_curr, device=device)
             fake_labels = torch.zeros(bs_curr, device=device)
             noise = torch.randn(bs_curr, 100, 1, 1, device=device)
-            
+            train_d = (i % gd_ratio == 0) or (epoch < d_head_start)
+            train_g = (epoch >= d_head_start)
+
             ##################################################################
-            # Train discriminator. Detach G output for speed. In some cases,
-            # we may wish to avoid training the discriminator every mini batch
-            # as it can easily overpower the generator.
+            # Train discriminator. Detach G output for speed.
             ##################################################################
             d_optim.zero_grad()
-            train_d = (i % gd_ratio == 0) or (epoch < d_head_start)
             if train_d:
                 fake = g(noise)
                 y_hat_fake = d(fake.detach())
@@ -109,29 +115,27 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
                 # Backpropagation.
                 d_loss.backward()
                 d_optim.step()
-            
+
             ##################################################################
             # Train generator. Use true_labels because we want to fool D.
-            # G's weights are the same so no need to re-generate fake 
-            # examples. D was updated so compute loss again. In some cases, we
-            # may give D a head start of a few epochs to help the classifier
-            # start learning so we don't have "the blind leading the blind".
+            # G's weights are the same so no need to re-generate fake
+            # examples. D was updated so compute loss again.
             ##################################################################
             g_optim.zero_grad()
-            train_g = (epoch >= d_head_start)
             if train_g:
                 g_loss = criterion(d(fake), real_labels)
                 g_losses.append(g_loss.item())
                 g_loss.backward()
                 g_optim.step()
-        
+
         # Print losses.
-        print(f'Epoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
-        if train_d:
-            print(f'D loss (real): {d_loss_real:.4f}\t', end='')
-            print(f'D loss (fake): {d_loss_fake:.4f}')
-        if train_g:
-            print(f'G loss: {g_loss:.4f}\n')
+        if epoch % print_freq == 0:
+            print(f'Epoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
+            if train_d:
+                print(f'D loss (real): {d_loss_real:.4f}\t', end='')
+                print(f'D loss (fake): {d_loss_fake:.4f}')
+            if train_g:
+                print(f'G loss: {g_loss:.4f}\n')
 
         # Generate sample from fixed noise at end of every fifth epoch.
         if epoch % sample_freq == 0:
@@ -310,9 +314,9 @@ def get_cycle_models(path=None):
     return list(models.values())
 
 
-def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y, 
+def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
                     weight_dir=None, sample_freq=10, lr=2e-4, b1=.5,
-                    use_labels=False, quiet_mode=True, load_path=None,
+                    loss_type='bce', quiet_mode=True, load_path=None,
                     models=None):
     """Train cycleGAN with Adam optimizer. The naming conventin G_xy will be
     used to refer to a generator that converts from set x to set y, while
@@ -321,7 +325,7 @@ def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
     
     Parameters
     -----------
-    use_labels: bool
+    loss_type: bool
         Specifies whether to use class labels (i.e. horse, zebra, giraffe). If
         False, D only tries to predict if it is a real or fake example 
         (e.g. photo or sketch2photo).
@@ -349,10 +353,12 @@ def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
                                lr, betas=(b1, .999))    
     
     # Define loss function.
-    if use_labels:
+    if loss_type == 'bce':
         criterion = nn.BCELoss(reduction='mean')
-    else:
+    elif loss_type == 'mse':
         criterion = nn.MSELoss(reduction='mean')
+    elif loss_type == 'mae':
+        criterion = nn.L1Loss(reduction='mean')
         
     # Set fixed examples for sample generation.
     fixed_x = next(iter(x_dl))[0]
@@ -445,7 +451,7 @@ def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
             vutils.save_image(sample_y, f'{sample_dir_y}/{epoch}.png', 
                               normalize=True)
             
-       # If specified, save weights corresponding to generated samples.
+        # If specified, save weights corresponding to generated samples.
         if weight_dir:
             states = dict(g_xy=G_xy.state_dict(),
                           g_yx=G_yx.state_dict(),

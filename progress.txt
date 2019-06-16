@@ -1,0 +1,11 @@
+Write 2-3 paragraphs describing the work you have done so far in your project.  List the responsibilities of each person in the group. 
+
+Include a link to a github repo with your code. If you have your project in a private repo, please add yanneta to the repo.
+
+If you need a private repo you can create one here.
+
+=========================
+I started by building a Deep Convolutional GAN (DCGAN). The generator consists of five deconvolutional blocks which gradually upsample the height and width of the input (random noise) into an image. The discriminator consists of five convolutional blocks which gradually downsample the image height and width as it moves through the network. I tried to follow most of the paper’s recommendations for architecture, hyperparameters, and weight initialization. I did add options for a few variations that can be chosen when initializing the model, such as replacing batch norm with instance norm or making changes to the activation function 
+(this was mostly based on Jeremy Howard's experiments with ReLU variants). While the results are not great for the sketch or photo datasets, I did validate that the DCGAN works by testing it on the CelebA dataset, where it works better. My guess is this could be related to the fact that the photo dataset only has 100 samples per class, and the classes are quite different from each other which the basic DCGAN methodology does not account for. I've been trying the model on a number of different datasets.
+
+I also built a simplified cycleGAN, but am still in the process of checking if my code is running correctly. Initial attempts to train resulted in the discriminator completely overpowering the generator.

@@ -97,4 +97,5 @@ celeb_tfms = transforms.Compose([transforms.Resize(img_size),
                                  transforms.Normalize([.5, .5, .5],
                                                       [.5, .5, .5])])
 celeb_ds = ImageFolder(root_celeb, transform=celeb_tfms)
-celeb_dl = DataLoader(celeb_ds, batch_size=bs, shuffle=True, num_workers=workers)
+celeb_dl = DataLoader(celeb_ds, batch_size=bs, shuffle=True,
+                      num_workers=workers)
