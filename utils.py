@@ -16,6 +16,8 @@ def show_batch(dl, limit=64, size=10):
     limit: int
         Max # of images to display (since we usually don't need to see all 128
         images in the batch).
+    size: int
+        Height and width of the square grid of images displayed.
     """
     batch = next(iter(dl))[0]
     fig, ax = plt.subplots(figsize=(size, size))

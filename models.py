@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.models import resnet18
 
 from utils import stats
 
@@ -290,6 +291,58 @@ class CycleGenerator(BaseModel):
         for group in self.groups:
             x = group(x)
         return x
+
+
+class PretrainedDiscriminator(BaseModel):
+
+    def __init__(self, activation=GRelu(.2)):
+        """
+        Parameters
+        -----------
+        activation: nn.Module
+            Activation function to use before the adaptive average pooling
+            near the end of the network.
+        """
+        super().__init__()
+        layers = list(resnet18(pretrained=True).children())[:-2]
+        self.groups = nn.ModuleList([nn.Sequential(*layers[:6]),
+                                     nn.Sequential(*layers[6:])])
+        self.freeze()
+        self.groups.append(nn.Linear(512, 1))
+        self.activation = activation
+
+    def forward(self, x):
+        for group in self.groups[:-1]:
+            x = group(x)
+        x = self.activation(x)
+        x = F.adaptive_avg_pool2d(x, (1, 1))
+        x = self.groups[-1](x.view(x.shape[0], -1))
+        return torch.sigmoid(x).squeeze()
+
+    def freeze(self):
+        """Freeze the whole network."""
+        for group in self.groups:
+            for p in group.parameters():
+                p.requires_grad = False
+
+    def unfreeze(self, i=None, verbose=False):
+        """Unfreeze all or part of the network.
+
+        Parameters
+        -----------
+        i: None or int
+            If None, unfreeze the whole network. If int, unfreeze only that
+            group.
+        """
+        for j, group in enumerate(self.groups):
+            if i is None or j == i:
+                if verbose: print(f'Unfreezing group {j}.')
+                for p in group.parameters():
+                    p.requires_grad = True
+            else:
+                if verbose: print(f'Freezing group {j}.')
+                for p in group.parameters():
+                    p.requires_grad = False
     
     
 JRelu = GRelu(leak=.1, sub=.4, max=6.0)
