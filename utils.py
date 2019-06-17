@@ -40,12 +40,14 @@ def save_real_batch(dl, path='samples'):
 
 
 def plot_losses(output):
-    """Plot losses and average predictions by mini batch."""
+    """Plot losses and average predictions by mini batch. Pass in output of
+    DCGAN train function.
+    """
     # Plot losses by mini batch.
     fig, ax = plt.subplots(2, 1, figsize=(9, 6))
-    ax[0].plot(output['d_real_losses'], label='D real')
-    ax[0].plot(output['d_fake_losses'], label='D fake')
-    ax[0].plot(output['g_losses'], label='G')
+    ax[0].plot(output['d_real_loss'], label='D real')
+    ax[0].plot(output['d_fake_loss'], label='D fake')
+    ax[0].plot(output['g_loss'], label='G')
     ax[0].set_title('Loss by Mini Batch')
     ax[0].legend()
     

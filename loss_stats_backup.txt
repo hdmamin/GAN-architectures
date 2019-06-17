@@ -3578,3 +3578,105 @@ Epoch [291/300]
 Batch 196 Metrics:
 D loss (real): 0.0002	D loss (fake): 0.0010
 G loss: 12.6746
+
+====================
+# 1,000 epochs small ds - leak .02
+Epoch [1/1000] 
+Batch 7 Metrics:
+D loss (real): 0.4828	D loss (fake): 0.2193
+G loss: 5.5517
+
+Epoch [51/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0175	D loss (fake): 0.0433
+G loss: 7.2200
+
+Epoch [101/1000] 
+Batch 7 Metrics:
+D loss (real): 0.1305	D loss (fake): 0.0863
+G loss: 4.4398
+
+Epoch [151/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0133	D loss (fake): 0.0163
+G loss: 5.0199
+
+Epoch [201/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0078	D loss (fake): 0.0182
+G loss: 6.4526
+
+Epoch [251/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0034	D loss (fake): 0.0469
+G loss: 9.9102
+
+Epoch [301/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0059	D loss (fake): 0.0106
+G loss: 7.7246
+
+Epoch [351/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0001	D loss (fake): 0.0000
+G loss: 46.2722
+
+Epoch [401/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0594	D loss (fake): 0.0696
+G loss: 6.7770
+
+Epoch [451/1000] 
+Batch 7 Metrics:
+D loss (real): 0.1859	D loss (fake): 0.0844
+G loss: 5.3658
+
+Epoch [501/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0748	D loss (fake): 0.0163
+G loss: 5.2058
+
+Epoch [551/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0081	D loss (fake): 0.0021
+G loss: 8.8387
+
+Epoch [601/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0103	D loss (fake): 0.0042
+G loss: 7.0408
+
+Epoch [651/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0136	D loss (fake): 0.0192
+G loss: 8.1832
+
+Epoch [701/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0666	D loss (fake): 0.0263
+G loss: 6.5518
+
+Epoch [751/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0133	D loss (fake): 0.0017
+G loss: 7.1592
+
+Epoch [801/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0270	D loss (fake): 0.0031
+G loss: 6.7931
+
+Epoch [851/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0270	D loss (fake): 0.0061
+G loss: 6.6207
+
+Epoch [901/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0007	D loss (fake): 0.0055
+G loss: 7.1063
+
+Epoch [951/1000] 
+Batch 7 Metrics:
+D loss (real): 0.0474	D loss (fake): 0.5679
+G loss: 26.2861
