@@ -1,5 +1,6 @@
 from collections import defaultdict
 from itertools import chain
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,9 +9,10 @@ import torchvision.utils as vutils
 from models import Discriminator, Generator, CycleGenerator
 from config import *
 
-
-def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
-              weight_dir=None, d=None, g=None, d_head_start=0, gd_ratio=1):
+    
+def new_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, quiet_mode=True,
+              sample_dir='samples', weight_dir=None, d=None, g=None,
+              d_head_start=0, gd_ratio=1):
     """Train generator and discriminator with Adam.
     
     NOTE: SOME CHANGES IN TRAIN MAY NOT BE REFLECTED HERE - CHECK BEFORE USING.
@@ -52,8 +54,9 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
         G will be trained every epoch, but D will only be trained every
         gd_ratio epochs.
     """
-    if not (d or g):
+    if not d:
         g = Generator().to(device)
+    if not g:
         d = Discriminator().to(device)
     # For GANs, models should stay in train mode.
     g.train()
@@ -74,11 +77,16 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     d_fake_avg = []
     g_losses = []
 
-    # Suppress printed output to 20 total times - think it's slowing down nb.
+    # Suppress printed output to 20 total times to avoid slowing down nb.
     print_freq = 1
     if quiet_mode:
         print_freq = max(1, epochs // 20)
-
+        
+    # Make directories for samples and weights.
+    os.makedirs(sample_dir, exist_ok=True)
+    if weight_dir:
+        os.makedirs(weight_dir, exist_ok=True)
+        
     # Train D and G.
     for epoch in range(epochs):
         for i, (x, y) in enumerate(dl):
@@ -87,18 +95,18 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             real_labels = torch.ones(bs_curr, device=device)
             fake_labels = torch.zeros(bs_curr, device=device)
             noise = torch.randn(bs_curr, 100, 1, 1, device=device)
-            train_d = (i % gd_ratio == 0) or (epoch < d_head_start)
-            train_g = (epoch >= d_head_start)
+            train_d = (i % gd_ratio == 0) or (epoch == 0 and i < d_head_start)
+            train_g = (epoch > 0 or i >= d_head_start)
 
             ##################################################################
             # Train discriminator. Detach G output for speed.
             ##################################################################
             d_optim.zero_grad()
+            fake = g(noise)
+            y_hat_fake = d(fake.detach())
+            y_hat_real = d(x)
+            
             if train_d:
-                fake = g(noise)
-                y_hat_fake = d(fake.detach())
-                y_hat_real = d(x)
-
                 # Compute losses.
                 d_loss_fake = criterion(y_hat_fake, fake_labels)
                 d_loss_real = criterion(y_hat_real, real_labels)
@@ -121,8 +129,8 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             # G's weights are the same so no need to re-generate fake
             # examples. D was updated so compute loss again.
             ##################################################################
-            g_optim.zero_grad()
             if train_g:
+                g_optim.zero_grad()
                 g_loss = criterion(d(fake), real_labels)
                 g_losses.append(g_loss.item())
                 g_loss.backward()
@@ -130,12 +138,12 @@ def NEW_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
 
         # Print losses.
         if epoch % print_freq == 0:
-            print(f'Epoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
+            print(f'\nEpoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
             if train_d:
                 print(f'D loss (real): {d_loss_real:.4f}\t', end='')
                 print(f'D loss (fake): {d_loss_fake:.4f}')
             if train_g:
-                print(f'G loss: {g_loss:.4f}\n')
+                print(f'G loss: {g_loss:.4f}')
 
         # Generate sample from fixed noise at end of every fifth epoch.
         if epoch % sample_freq == 0:
@@ -186,8 +194,9 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, quiet_mode=True,
     g: nn.Module
         Generator (upsamples random noise into image).
     """
-    if not (d or g):
+    if not d:
         g = Generator().to(device)
+    if not g:
         d = Discriminator().to(device)
     # For GANs, models should stay in train mode.
     g.train()
@@ -208,10 +217,15 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, quiet_mode=True,
     d_fake_avg = []
     g_losses = []
 
-    # Suppress printed output to 20 total times - think it's slowing down nb.
+    # Suppress printed output to 20 total times to avoid slowing down nb.
     print_freq = 1
     if quiet_mode:
         print_freq = max(1, epochs // 20)
+        
+    # Make directories for samples and weights.
+    os.makedirs(sample_dir, exist_ok=True)
+    if weight_dir:
+        os.makedirs(weight_dir, exist_ok=True)
         
     # Train D and G.
     for epoch in range(epochs):
@@ -260,10 +274,10 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, quiet_mode=True,
         
         # Print losses.
         if epoch % print_freq == 0:
-            print(f'Epoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
+            print(f'\nEpoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
             print(f'D loss (real): {d_loss_real:.4f}\t', end='')
             print(f'D loss (fake): {d_loss_fake:.4f}')
-            print(f'G loss: {g_loss:.4f}\n')
+            print(f'G loss: {g_loss:.4f}')
 
         # Generate sample from fixed noise at end of every fifth epoch.
         if epoch % sample_freq == 0:

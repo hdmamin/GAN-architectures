@@ -90,7 +90,7 @@ def show_samples(sample_dir='samples'):
         show_img(f)
 
 
-def render_samples(path, out_file):
+def render_samples(path):
     """Render animation from all files in a directory of samples.
 
     Parameters
@@ -100,6 +100,7 @@ def render_samples(path, out_file):
     out_files: str
         Location to save new file.
     """
+    out_file = path + '.gif'
     matplotlib.rcParams['animation.convert_path'] = 'magick'
     fig = plt.figure(figsize=(9, 9))
     plt.axis('off')
