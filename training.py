@@ -137,9 +137,10 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
         # Print losses.
         if epoch % print_freq == 0:
             print(f'\nEpoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
-            if train_d:
-                print(f"D loss (real): {stats['d_loss_real'][-1]:.4f}\t"
-                      f"D loss (fake): {stats['d_loss_fake'][-1]:.4f}")
+            if not train_d:
+                print('>>>SKIP D TRAINING. Most recent stats:')
+            print(f"D loss (real): {stats['d_loss_real'][-1]:.4f}\t"
+                  f"D loss (fake): {stats['d_loss_fake'][-1]:.4f}")
             if train_g:
                 print(f"G loss: {stats['g_loss'][-1]:.4f}")
 
