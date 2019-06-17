@@ -1,4 +1,5 @@
 from collections import defaultdict
+from collections.abc import Iterable
 from itertools import chain
 import numpy as np
 import os
@@ -12,8 +13,8 @@ from config import *
 
 
 def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
-          weight_dir=None, d_head_start=0, gd_ratio=1, quiet_mode=True, d=None,
-          g=None):
+          weight_dir=None, d_head_start=0, gd_ratio=1, quiet_mode=True, g=None,
+          d=None):
     """Train generator and discriminator with Adam.
 
     Parameters
@@ -52,22 +53,22 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     g: Generator, subclass of nn.Module
         Generator that upsamples random noise into image.
     """
-    if not d:
-        g = Generator().to(device)
     if not g:
+        g = Generator().to(device)
+    if not d:
         d = Discriminator().to(device)
     # For GANs, models should stay in train mode.
     g.train()
     d.train()
 
     # Define loss and optimizers.
-    if type(lr) == list:
+    if isinstance(lr, Iterable):
         lr1, lr2 = lr
     else:
         lr1 = lr2 = lr
     criterion = nn.BCELoss()
-    d_optim = torch.optim.Adam(d.parameters(), lr=lr1, betas=(b1, .999))
-    g_optim = torch.optim.Adam(g.parameters(), lr=lr2, betas=(b1, .999))
+    g_optim = torch.optim.Adam(g.parameters(), lr=lr1, betas=(b1, .999))
+    d_optim = torch.optim.Adam(d.parameters(), lr=lr2, betas=(b1, .999))
 
     # Noise used for sample images, not training.
     fixed_noise = torch.randn(dl.batch_size, 100, 1, 1, device=device)
@@ -116,7 +117,7 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
                 stats['d_fake_avg'].append(fake_avg)
                 stats['d_real_avg'].append(real_avg)
                 stats['d_fake_loss'].append(d_loss_fake.item())
-                stats['d_real_losses'].append(d_loss_real.item())
+                stats['d_real_loss'].append(d_loss_real.item())
 
                 # Backpropagation.
                 d_loss.backward()
@@ -139,8 +140,8 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             print(f'\nEpoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
             if not train_d:
                 print('>>>SKIP D TRAINING. Most recent stats:')
-            print(f"D loss (real): {stats['d_loss_real'][-1]:.4f}\t"
-                  f"D loss (fake): {stats['d_loss_fake'][-1]:.4f}")
+            print(f"D loss (real): {stats['d_real_loss'][-1]:.4f}\t"
+                  f"D loss (fake): {stats['d_fake_loss'][-1]:.4f}")
             if train_g:
                 print(f"G loss: {stats['g_loss'][-1]:.4f}")
 

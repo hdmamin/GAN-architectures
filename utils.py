@@ -41,7 +41,7 @@ def save_real_batch(dl, path='samples'):
     vutils.save_image(batch[0], f'{path}/real_batch.png', normalize=True)
 
 
-def plot_losses(output):
+def plot_output(output):
     """Plot losses and average predictions by mini batch. Pass in output of
     DCGAN train function.
     """
