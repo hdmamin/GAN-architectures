@@ -3580,6 +3580,108 @@ D loss (real): 0.0002	D loss (fake): 0.0010
 G loss: 12.6746
 
 ====================
+# 300 epochs - photos 2
+
+Epoch [1/300] 
+Batch 202 Metrics:
+D loss (real): 0.4821	D loss (fake): 0.0001
+G loss: 11.9797
+
+Epoch [16/300] 
+Batch 202 Metrics:
+D loss (real): 0.0247	D loss (fake): 0.3350
+G loss: 7.1250
+
+Epoch [31/300] 
+Batch 202 Metrics:
+D loss (real): 0.0142	D loss (fake): 2.3343
+G loss: 8.5377
+
+Epoch [46/300] 
+Batch 202 Metrics:
+D loss (real): 0.1855	D loss (fake): 0.2570
+G loss: 3.8149
+
+Epoch [61/300] 
+Batch 202 Metrics:
+D loss (real): 0.3091	D loss (fake): 0.0319
+G loss: 3.1188
+
+Epoch [76/300] 
+Batch 202 Metrics:
+D loss (real): 0.0357	D loss (fake): 0.0787
+G loss: 4.5330
+
+Epoch [91/300] 
+Batch 202 Metrics:
+D loss (real): 0.0253	D loss (fake): 0.0072
+G loss: 6.6409
+
+Epoch [106/300] 
+Batch 202 Metrics:
+D loss (real): 0.0015	D loss (fake): 0.5767
+G loss: 7.9326
+
+Epoch [121/300] 
+Batch 202 Metrics:
+D loss (real): 0.0071	D loss (fake): 0.0712
+G loss: 7.0096
+
+Epoch [136/300] 
+Batch 202 Metrics:
+D loss (real): 0.0024	D loss (fake): 0.0101
+G loss: 7.4320
+
+Epoch [151/300] 
+Batch 202 Metrics:
+D loss (real): 0.0008	D loss (fake): 0.2436
+G loss: 12.5473
+
+Epoch [166/300] 
+Batch 202 Metrics:
+D loss (real): 0.0094	D loss (fake): 0.0032
+G loss: 7.8263
+
+Epoch [181/300] 
+Batch 202 Metrics:
+D loss (real): 0.0458	D loss (fake): 0.0026
+G loss: 9.6840
+
+Epoch [196/300] 
+Batch 202 Metrics:
+D loss (real): 0.0145	D loss (fake): 0.0172
+G loss: 6.5365
+
+Epoch [211/300] 
+Batch 202 Metrics:
+D loss (real): 0.0163	D loss (fake): 0.0623
+G loss: 9.1849
+
+Epoch [226/300] 
+Batch 202 Metrics:
+D loss (real): 0.0053	D loss (fake): 0.0013
+G loss: 8.1724
+
+Epoch [241/300] 
+Batch 202 Metrics:
+D loss (real): 0.0698	D loss (fake): 0.0052
+G loss: 6.3547
+
+Epoch [256/300] 
+Batch 202 Metrics:
+D loss (real): 0.0385	D loss (fake): 0.0365
+G loss: 8.3818
+
+Epoch [271/300] 
+Batch 202 Metrics:
+D loss (real): 0.1260	D loss (fake): 0.0013
+G loss: 8.5431
+
+Epoch [286/300] 
+Batch 202 Metrics:
+D loss (real): 0.0074	D loss (fake): 0.0028
+G loss: 8.0908
+====================
 # 1,000 epochs small ds - leak .02
 Epoch [1/1000] 
 Batch 7 Metrics:
@@ -3680,3 +3782,126 @@ Epoch [951/1000]
 Batch 7 Metrics:
 D loss (real): 0.0474	D loss (fake): 0.5679
 G loss: 26.2861
+
+=================
+# 30 epochs sketch
+
+Epoch [1/30] 
+Batch 1180 Metrics:
+G loss: 1.0901
+
+Epoch [2/30] 
+Batch 1180 Metrics:
+G loss: 1.6922
+
+Epoch [3/30] 
+Batch 1180 Metrics:
+G loss: 3.4673
+
+Epoch [4/30] 
+Batch 1180 Metrics:
+G loss: 5.9918
+
+Epoch [5/30] 
+Batch 1180 Metrics:
+G loss: 5.1363
+
+Epoch [6/30] 
+Batch 1180 Metrics:
+G loss: 11.3696
+
+Epoch [7/30] 
+Batch 1180 Metrics:
+G loss: 5.6310
+
+Epoch [8/30] 
+Batch 1180 Metrics:
+G loss: 3.7868
+
+Epoch [9/30] 
+Batch 1180 Metrics:
+G loss: 1.5151
+
+Epoch [10/30] 
+Batch 1180 Metrics:
+G loss: 4.9256
+
+Epoch [11/30] 
+Batch 1180 Metrics:
+G loss: 4.0855
+
+Epoch [12/30] 
+Batch 1180 Metrics:
+G loss: 17.7115
+
+Epoch [13/30] 
+Batch 1180 Metrics:
+G loss: 4.0901
+
+Epoch [14/30] 
+Batch 1180 Metrics:
+G loss: 5.9970
+
+Epoch [15/30] 
+Batch 1180 Metrics:
+G loss: 8.0221
+
+Epoch [16/30] 
+Batch 1180 Metrics:
+G loss: 13.4355
+
+Epoch [17/30] 
+Batch 1180 Metrics:
+G loss: 5.8440
+
+Epoch [18/30] 
+Batch 1180 Metrics:
+G loss: 7.7557
+
+Epoch [19/30] 
+Batch 1180 Metrics:
+G loss: 7.2045
+
+Epoch [20/30] 
+Batch 1180 Metrics:
+G loss: 34.2100
+
+Epoch [21/30] 
+Batch 1180 Metrics:
+G loss: 4.8004
+
+Epoch [22/30] 
+Batch 1180 Metrics:
+G loss: 7.4656
+
+Epoch [23/30] 
+Batch 1180 Metrics:
+G loss: 5.3597
+
+Epoch [24/30] 
+Batch 1180 Metrics:
+G loss: 6.7015
+
+Epoch [25/30] 
+Batch 1180 Metrics:
+G loss: 6.8159
+
+Epoch [26/30] 
+Batch 1180 Metrics:
+G loss: 8.7212
+
+Epoch [27/30] 
+Batch 1180 Metrics:
+G loss: 15.5885
+
+Epoch [28/30] 
+Batch 1180 Metrics:
+G loss: 7.8500
+
+Epoch [29/30] 
+Batch 1180 Metrics:
+G loss: 8.5082
+
+Epoch [30/30] 
+Batch 1180 Metrics:
+G loss: 6.5387
