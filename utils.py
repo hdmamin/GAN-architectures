@@ -119,3 +119,47 @@ def render_samples(path):
 def stats(x):
     """Quick wrapper to get mean and standard deviation of a tensor."""
     return round(x.mean().item(), 4), round(x.std().item(), 4)
+
+
+def coords2img(row, out_file, out_dir='cat_data'):
+    """Convert the line coordinates, stored as a string in the raw quickdraw
+    dataset, into an image and save it in the output directory.
+    
+    Parameters
+    -----------
+    row: str
+        One item in our df/series corresponding to a single image.
+    out_file: str
+        File name of output.
+    out_dir: str
+        Name of output directory.
+    """
+    output_file = os.path.join(out_dir, f'{out_file}.png')
+    lines = [np.array(line)/255 for line in ast.literal_eval(row)]
+    # Save as 64px x 64px img. Flip y axis because 0,0 is given as top left.
+    fig, ax = plt.subplots(figsize=(.64, .64), dpi=100)
+    plt.gca().invert_yaxis()
+    for i, line in enumerate(lines):
+        ax.plot(line[0, :], line[1, :], '-', c='black')
+    plt.axis('off')
+    plt.savefig(output_file, dpi=100)
+    plt.close()
+    
+
+def gen_images(data, start=0, subset=None):
+    """Generate images for all examples in our quickdraw dataset.
+    
+    Parameters
+    -----------
+    data: pd.Series
+        Contains stroke coordinatess for all images.
+    start: int
+        Index of file to start with (useful if memory error forces us to 
+        resume in the middle - leave as zero to start from the beginning).
+    subset: int
+        Limit the number of samples to create (useful for testing - leave as
+        None to create all samples).
+    """
+    for i, row in enumerate(data[start:subset], start):
+        if i % 1000 == 0: print(f'Processing file {i}...')
+        coords2img(row, i)

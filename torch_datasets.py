@@ -72,6 +72,13 @@ small_ds = ImageFolder(root_small, transform=tfms)
 small_dl = DataLoader(small_ds, batch_size=bs, shuffle=True,
                       num_workers=workers)
 
+# Quickdraw sketch dataset (cats).
+quickdraw_tfms = transforms.Compose([transforms.ToTensor(),
+                                     transforms.Normalize([.88, .88, .88],
+                                                          [.3, .3, .3])])
+quickdraw_ds = ImageFolder('cats', transform=quickdraw_tfms)
+quickdraw_dl = DataLoader(quickdraw_ds, batch_size=bs, num_workers=workers)
+
 # CIFAR10 dataset (must download the first time we run code)
 cifar_ds = datasets.CIFAR10(root='cifar',
                             download=True,
