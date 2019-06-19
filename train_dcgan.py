@@ -2,6 +2,7 @@ import argparse
 import os
 
 import matplotlib
+import subprocess
 # Must set matplotlib display before importing plotting functions from utils.
 matplotlib.use('Agg')
 
@@ -43,6 +44,8 @@ def get_args():
                         help='# of mini batches to train D before training G.')
     parser.add_argument('--sample_freq', type=int, default=5,
                         help='When to generate samples (measured in epochs).')
+    parser.add_argument('--stop_vm', type=bool, default=False,
+                        help='Whether to close the VM when finished training.')
     args = parser.parse_args()
 
     return args
@@ -83,6 +86,11 @@ def main(args):
         render_samples(args.sample_dir)
         with open(os.path.join(args.sample_dir, 'README.md'), 'w') as f:
             f.write(str(args))
+
+    # Close Google Cloud VM when done.
+    if args.stop_vm:
+        subprocess.run('gcloud compute instances stop my-fastai-instance '
+                       '--zone=us-west2-b')
 
 
 if __name__ == '__main__':
