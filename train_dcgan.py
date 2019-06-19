@@ -1,12 +1,12 @@
 import argparse
 import os
 
-from config import device
 import matplotlib
 # Must set matplotlib display before importing plotting functions from utils.
 matplotlib.use('Agg')
 
 
+from config import device
 from models import (Generator, Discriminator, PretrainedDiscriminator, GRelu,
                     JRelu)
 from torch_datasets import *
