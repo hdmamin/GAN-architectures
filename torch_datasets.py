@@ -74,8 +74,11 @@ small_dl = DataLoader(small_ds, batch_size=bs, shuffle=True,
 
 # Quickdraw sketch dataset (cats).
 quickdraw_tfms = transforms.Compose([transforms.ToTensor(),
-                                     transforms.Normalize([.88, .88, .88],
-                                                          [.3, .3, .3])])
+                                     transforms.Normalize([.5, .5, .5],
+                                                          [.5, .5, .5]),
+#                                      transforms.Normalize([.88, .88, .88],
+#                                                           [.3, .3, .3])
+                                    ])
 quickdraw_ds = ImageFolder('cats', transform=quickdraw_tfms)
 quickdraw_dl = DataLoader(quickdraw_ds, batch_size=bs, num_workers=workers)
 

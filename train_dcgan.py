@@ -1,6 +1,12 @@
 import argparse
+import os
 
 from config import device
+import matplotlib
+# Must set matplotlib display before importing plotting functions from utils.
+matplotlib.use('Agg')
+
+
 from models import (Generator, Discriminator, PretrainedDiscriminator, GRelu,
                     JRelu)
 from torch_datasets import *
@@ -9,6 +15,7 @@ from utils import render_samples, plot_output
 
 
 def get_args():
+    """Create argument parser to read settings from command line."""
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset', type=str,
                         help='options: photo, sketch, quickdraw, celeb, small')
@@ -42,20 +49,25 @@ def get_args():
 
 
 def main(args):
+    """Train DCGAN for user-specified number of epochs."""
     dataloaders = dict(photo=photo_dl,
                        sketch=sketch_dl,
                        quickdraw=quickdraw_dl,
                        celeb=celeb_dl,
                        small=small_dl)
     dloader = dataloaders[args.dataset]
-    if args.JRelu:
+    if args.jrelu:
         activation = JRelu
     else:
         activation = GRelu(args.leak)
+    
+    # Set learning rates.
     if args.lr and args.lr2:
         lr = [args.lr, args.lr2]
     else:
         lr = args.lr
+        
+    # Initialize models.
     d = Discriminator(act=activation, norm=args.norm).to(device)
     if args.pretrained:
         g = PretrainedDiscriminator(activation).to(device)
@@ -64,9 +76,13 @@ def main(args):
     output = train(args.epochs, dloader, lr, sample_freq=args.sample_freq,
                    sample_dir=args.sample_dir, d_head_start=args.d_head_start,
                    gd_ratio=args.gd_ratio, d=d, g=g)
+    
+    # Save loss plots, sample gif, and settings in sample_dir.
     if args.sample_dir:
         plot_output(output, args.sample_dir)
         render_samples(args.sample_dir)
+        with open(os.path.join(args.sample_dir, 'README.md'), 'w') as f:
+            f.write(str(args))
 
 
 if __name__ == '__main__':

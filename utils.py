@@ -108,7 +108,7 @@ def render_samples(path):
         Directory that contains samples images.
     """
     out_file = os.path.join(path, path + '.gif')
-    matplotlib.rcParams['animation.convert_path'] = 'magick'
+#     matplotlib.rcParams['animation.convert_path'] = 'magick'
     fig = plt.figure(figsize=(9, 9))
     plt.axis('off')
     arrs = [read_img(file) for file in sorted_paths(path)]

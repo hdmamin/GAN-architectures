@@ -13,7 +13,7 @@ from config import *
 
 
 def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
-          weight_dir=None, d_head_start=0, gd_ratio=1, quiet_mode=True, g=None,
+          save_weights=False, d_head_start=0, gd_ratio=1, quiet_mode=True, g=None,
           d=None):
     """Train generator and discriminator with Adam.
 
@@ -30,9 +30,10 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
         Save sample images from generator every n epochs (default 10).
     sample_dir: str
         Directory to save images output by the generator.
-    weight_dir: str
-        Directory to save weights with same frequency as samples are
-        generated. Default is None, meaning no weights will be saved.
+    save_weights: bool
+        If True, save weights in the sample directory with the same 
+        frequency as samples are generated. Default is False,
+        meaning no weights will be saved.
     d_head_start: int
         Number of batches to train D for before starting to train G. Default of
         zero means both will be trained from the beginning. The hope is that
@@ -83,8 +84,6 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
 
     # Make directories for samples and weights.
     os.makedirs(sample_dir, exist_ok=True)
-    if weight_dir:
-        os.makedirs(weight_dir, exist_ok=True)
 
     # Train D and G.
     for epoch in range(epochs):
@@ -149,153 +148,20 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
         if epoch % sample_freq == 0:
             with torch.no_grad():
                 fake = g(fixed_noise)
-                vutils.save_image(fake.detach(), f'{sample_dir}/{epoch}.png',
+                vutils.save_image(fake.detach(), f'{sample_dir}/{epoch+1}.png',
                                   normalize=True)
 
             # If specified, save weights corresponding to generated samples.
-            if weight_dir:
+            if save_weights:
                 states = dict(g=g.state_dict(),
                               d=d.state_dict(),
                               g_optimizer=g_optim.state_dict(),
                               d_optimizer=d_optim.state_dict(),
                               epoch=epoch)
-                torch.save(states, f'{weight_dir}/{epoch}.pth')
+                torch.save(states, f'{sample_dir}/{epoch+1}.pth')
 
+    torch.save(stats, f'{sample_dir}/stats.csv')
     return stats
-
-
-# def OLD_train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, quiet_mode=True,
-#           sample_dir='samples', weight_dir=None, d=None, g=None):
-#     """Train generator and discriminator with Adam.
-#
-#     Parameters
-#     -----------
-#     epochs: int
-#         Number of epochs to train for.
-#     dl: DataLoader
-#     lr: float
-#         Learning rate. Paper recommends .0002.
-#     b1: float
-#         Hyperparameter for Adam. Paper recommends 0.5.
-#     sample_freq: int
-#         Save sample images from generator every n epochs (default 10).
-#     sample_dir: str
-#         Directory to save images output by the generator.
-#     weight_dir: str
-#         Directory to save weights with sample frequency as samples are
-#         generated. Default is None, meaning no weights will be saved.
-#     d: nn.Module
-#         Discriminator (binary classifier, 1 for real, 0 for fake).
-#     g: nn.Module
-#         Generator (upsamples random noise into image).
-#     """
-#     if not d:
-#         g = Generator().to(device)
-#     if not g:
-#         d = Discriminator().to(device)
-#     # For GANs, models should stay in train mode.
-#     g.train()
-#     d.train()
-#
-#     # Define loss and optimizers.
-#     criterion = nn.BCELoss()
-#     d_optim = torch.optim.Adam(d.parameters(), lr=lr, betas=(b1, .999))
-#     g_optim = torch.optim.Adam(g.parameters(), lr=lr, betas=(b1, .999))
-#
-#     # Noise used for sample images, not training.
-#     fixed_noise = torch.randn(dl.batch_size, 100, 1, 1, device=device)
-#
-#     # Store stats to return at end.
-#     d_real_losses = []
-#     d_fake_losses = []
-#     d_real_avg = []
-#     d_fake_avg = []
-#     g_losses = []
-#
-#     # Suppress printed output to 20 total times to avoid slowing down nb.
-#     print_freq = 1
-#     if quiet_mode:
-#         print_freq = max(1, epochs // 20)
-#
-#     # Make directories for samples and weights.
-#     os.makedirs(sample_dir, exist_ok=True)
-#     if weight_dir:
-#         os.makedirs(weight_dir, exist_ok=True)
-#
-#     # Train D and G.
-#     for epoch in range(epochs):
-#         for i, (x, y) in enumerate(dl):
-#             x = x.to(device)
-#             bs_curr = x.shape[0]
-#             real_labels = torch.ones(bs_curr, device=device)
-#             fake_labels = torch.zeros(bs_curr, device=device)
-#             noise = torch.randn(bs_curr, 100, 1, 1, device=device)
-#
-#             ##################################################################
-#             # Train discriminator. Detach G output for speed.
-#             ##################################################################
-#             d_optim.zero_grad()
-#             fake = g(noise)
-#             y_hat_fake = d(fake.detach())
-#             y_hat_real = d(x)
-#
-#             # Compute losses.
-#             d_loss_fake = criterion(y_hat_fake, fake_labels)
-#             d_loss_real = criterion(y_hat_real, real_labels)
-#             d_loss = d_loss_real + d_loss_fake
-#
-#             # Update stats.
-#             fake_avg = y_hat_fake.mean().item()
-#             real_avg = y_hat_real.mean().item()
-#             d_fake_avg.append(fake_avg)
-#             d_real_avg.append(real_avg)
-#             d_fake_losses.append(d_loss_fake.item())
-#             d_real_losses.append(d_loss_real.item())
-#
-#             # Backpropagation.
-#             d_loss.backward()
-#             d_optim.step()
-#
-#             ##################################################################
-#             # Train generator. Use true_labels because we want to fool D.
-#             # G's weights are the same so no need to re-generate fake
-#             # examples. D was updated so compute loss again.
-#             ##################################################################
-#             g_optim.zero_grad()
-#             g_loss = criterion(d(fake), real_labels)
-#             g_losses.append(g_loss.item())
-#             g_loss.backward()
-#             g_optim.step()
-#
-#         # Print losses.
-#         if epoch % print_freq == 0:
-#             print(f'\nEpoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
-#             print(f'D loss (real): {d_loss_real:.4f}\t', end='')
-#             print(f'D loss (fake): {d_loss_fake:.4f}')
-#             print(f'G loss: {g_loss:.4f}')
-#
-#         # Generate sample from fixed noise at end of every fifth epoch.
-#         if epoch % sample_freq == 0:
-#             with torch.no_grad():
-#                 fake = g(fixed_noise)
-#                 vutils.save_image(fake.detach(),
-#                                   f'{sample_dir}/{epoch}.png',
-#                                   normalize=True)
-#
-#             # If specified, save weights corresponding to generated samples.
-#             if weight_dir:
-#                 states = dict(g=g.state_dict(),
-#                               d=d.state_dict(),
-#                               g_optimizer=g_optim.state_dict(),
-#                               d_optimizer=d_optim.state_dict(),
-#                               epoch=epoch)
-#                 torch.save(states, f'{weight_dir}/{epoch}.pth')
-#
-#     return dict(d_real_losses=d_real_losses,
-#                 d_fake_losses=d_fake_losses,
-#                 g_losses=g_losses,
-#                 d_real_avg=d_real_avg,
-#                 d_fake_avg=d_fake_avg)
 
 
 def get_cycle_models(path=None):
@@ -324,7 +190,7 @@ def get_cycle_models(path=None):
 
 
 def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
-                    weight_dir=None, sample_freq=10, lr=2e-4, b1=.5,
+                    save_weights=False, sample_freq=10, lr=2e-4, b1=.5,
                     loss_type='bce', quiet_mode=True, load_path=None,
                     models=None):
     """Train cycleGAN with Adam optimizer. The naming conventin G_xy will be
@@ -356,10 +222,14 @@ def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
         G_xy, G_yx, D_x, D_y = models
     
     # Create optimizers.
+    if isinstance(lr, Iterable):
+        lr1, lr2 = lr
+    else:
+        lr1 = lr2 = lr
     optim_g = torch.optim.Adam(chain(G_xy.parameters(), G_yx.parameters()), 
-                               lr, betas=(b1, .999))
+                               lr1, betas=(b1, .999))
     optim_d = torch.optim.Adam(chain(D_x.parameters(), D_y.parameters()),
-                               lr, betas=(b1, .999))    
+                               lr2, betas=(b1, .999))    
     
     # Define loss function.
     if loss_type == 'bce':
@@ -455,19 +325,19 @@ def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
         if epoch % sample_freq == 0:
             sample_x = G_yx(y).detach()
             sample_y = G_yx(x).detach()
-            vutils.save_image(sample_x, f'{sample_dir_x}/{epoch}.png', 
+            vutils.save_image(sample_x, f'{sample_dir_x}/{epoch+1}.png', 
                               normalize=True)
-            vutils.save_image(sample_y, f'{sample_dir_y}/{epoch}.png', 
+            vutils.save_image(sample_y, f'{sample_dir_y}/{epoch+1}.png', 
                               normalize=True)
             
         # If specified, save weights corresponding to generated samples.
-        if weight_dir:
+        if save_weights:
             states = dict(g_xy=G_xy.state_dict(),
                           g_yx=G_yx.state_dict(),
                           dx=D_x.state_dict(),
                           dy=D_y.state_dict(),
-                          epoch=epoch)
-            torch.save(states, f'{weight_dir}/{epoch}.pth') 
+                          epoch=epoch+1)
+            torch.save(states, f'{sample_dir_x}/{epoch+1}.pth') 
                 
         # Print results for last mini batch of epoch.
         if epoch % print_freq == 0:
@@ -477,4 +347,5 @@ def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
             print(f"G xyx loss: {stats['g_xyx'][-1]:.3f}\t"
                   f"G yxy fake: {stats['g_yxy'][-1]:.3f}\n")
             
+    torch.save(stats, f'{sample_dir_x}/stats.pkl')
     return stats
