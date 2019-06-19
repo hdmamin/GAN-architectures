@@ -12,6 +12,7 @@ cifar/
 mnist/
 tutorial_dcgan.ipynb
 final.*
-edges2shoes
+edges2shoes/
 celeba/
 ut-zap50k-images-square/
+tutorial2.ipynb

@@ -1,8 +1,10 @@
+import ast
 import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import animation
 import numpy as np
+import os
 from pathlib import Path
 import torchvision.utils as vutils
 
@@ -41,7 +43,7 @@ def save_real_batch(dl, path='samples'):
     vutils.save_image(batch[0], f'{path}/real_batch.png', normalize=True)
 
 
-def plot_output(output):
+def plot_output(output, out_dir=None):
     """Plot losses and average predictions by mini batch. Pass in output of
     DCGAN train function.
     """
@@ -59,6 +61,8 @@ def plot_output(output):
     ax[1].set_title('Average Soft Predictions (D) by Mini Batch')
     plt.tight_layout()
     plt.legend()
+    if out_dir:
+        plt.savefig(os.path.join(out_dir, 'output.png'), bbox_inches=None)
     plt.show()
     
     
@@ -84,7 +88,8 @@ def sorted_paths(dir_):
     """Pass in the name of a directory as a string and return a list of
     file Path objects sorted by epoch number.
     """
-    return sorted([f for f in Path(dir_).iterdir() if str(f.parts[-1])[0].isnumeric()],
+    return sorted([f for f in Path(dir_).iterdir()
+                   if str(f.parts[-1])[0].isnumeric()],
                   key=lambda x: int(x.parts[-1].split('.')[0]))
 
 
@@ -101,10 +106,8 @@ def render_samples(path):
     -----------
     path: str
         Directory that contains samples images.
-    out_files: str
-        Location to save new file.
     """
-    out_file = path + '.gif'
+    out_file = os.path.join(path, path + '.gif')
     matplotlib.rcParams['animation.convert_path'] = 'magick'
     fig = plt.figure(figsize=(9, 9))
     plt.axis('off')
