@@ -17,7 +17,7 @@ celeba/
 ut-zap50k-images-square/
 tutorial2.ipynb
 cat.csv
-cats/
+cat/
 *.docx
 dog.csv
 dog/

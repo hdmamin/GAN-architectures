@@ -19,7 +19,7 @@ def get_args():
     """Create argument parser to read settings from command line."""
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset', type=str,
-                        help='options: photo, sketch, quickdraw, celeb, small')
+                        help='options: photo, sketch, cat, dog, celeb, small')
     parser.add_argument('-e', '--epochs', type=int,
                         help='# of epochs to train for.')
     parser.add_argument('-n', '--norm', type=str, default='bn',
@@ -55,7 +55,8 @@ def main(args):
     """Train DCGAN for user-specified number of epochs."""
     dataloaders = dict(photo=photo_dl,
                        sketch=sketch_dl,
-                       quickdraw=quickdraw_dl,
+                       cat=cat_dl,
+                       dog=dog_dl,
                        celeb=celeb_dl,
                        small=small_dl)
     dloader = dataloaders[args.dataset]

@@ -79,8 +79,11 @@ quickdraw_tfms = transforms.Compose([transforms.ToTensor(),
 #                                      transforms.Normalize([.88, .88, .88],
 #                                                           [.3, .3, .3])
                                     ])
-quickdraw_ds = ImageFolder('cats', transform=quickdraw_tfms)
-quickdraw_dl = DataLoader(quickdraw_ds, batch_size=bs, num_workers=workers)
+cat_ds = ImageFolder('cat', transform=quickdraw_tfms)
+cat_dl = DataLoader(cat_ds, batch_size=bs, num_workers=workers)
+
+dog_ds = ImageFolder('dog', transform=quickdraw_tfms)
+dog_dl = DataLoader(dog_ds, batch_size=bs, num_workers=workers)
 
 # CIFAR10 dataset (must download the first time we run code)
 cifar_ds = datasets.CIFAR10(root='cifar',

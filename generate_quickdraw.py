@@ -12,6 +12,7 @@ import sys
 
 
 def get_args():
+    """Create parser to get user-specified params."""
     parser = argparse.ArgumentParser()
     parser.add_argument('file', type=str, 
                         help='name of doodle category (e.g. dog)')
