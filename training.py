@@ -12,6 +12,25 @@ from models import Discriminator, Generator, CycleGenerator
 from config import *
 
 
+def get_optimizers(g, d, lr_g, lr_d, b1=.5):
+    """Return Adam optimizers for generator and discriminator.
+    
+    Parameters
+    -----------
+    g: Generator
+    d: Discriminator
+    lr_g: float
+        Learning rate for generator.
+    lr_d: float
+        Learning rate for discriminator.
+    b1: float
+        Hyperparameter for Adam.
+    """
+    g_optim = torch.optim.Adam(g.parameters(), lr=lr_g, beta=(b1, .999))
+    d_optim = torch.optim.Adam(d.parameters(), lr=lr_d, betas=(b1, .999))
+    return g_optim, d_optim
+
+                               
 def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
           save_weights=False, d_head_start=0, gd_ratio=1, quiet_mode=True, g=None,
           d=None):
@@ -67,15 +86,13 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
         lr1, lr2 = lr
     else:
         lr1 = lr2 = lr
+#     g_optim = torch.optim.Adam(g.parameters(), lr=lr1, betas=(b1, .999))
+#     d_optim = torch.optim.Adam(d.parameters(), lr=lr2, betas=(b1, .999))
     criterion = nn.BCELoss()
-    g_optim = torch.optim.Adam(g.parameters(), lr=lr1, betas=(b1, .999))
-    d_optim = torch.optim.Adam(d.parameters(), lr=lr2, betas=(b1, .999))
-
+    g_optim, d_optim = get_optimizers(g, d, lr1, lr2, b1)
+                                      
     # Noise used for sample images, not training.
     fixed_noise = torch.randn(dl.batch_size, 100, 1, 1, device=device)
-
-    # Store stats to return at end.
-    stats = defaultdict(list)
 
     # Suppress printed output to 20 total times to avoid slowing down nb.
     print_freq = 1
@@ -85,6 +102,9 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     # Make directories for samples and weights.
     os.makedirs(sample_dir, exist_ok=True)
 
+    # Store stats to return at end.
+    stats = defaultdict(list)
+    
     # Train D and G.
     for epoch in range(epochs):
         for i, (x, y) in enumerate(dl):
@@ -134,6 +154,13 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
                 g_loss.backward()
                 g_optim.step()
 
+        # If losses aren't changing, increase LR to try to escape.
+        if (stats['d_fake_loss'][-1] == stats['d_fake_loss'][-2] and 
+            stats['d_real_loss'][-1] == stats['d_real_loss'][-2]):
+            lr1 *= 1.2
+            lr2 *= 1.2
+            g_optim, d_optim = get_optimizers(g, d, lr1, lr2, b1)
+        
         # Print losses.
         if epoch % print_freq == 0:
             print(f'\nEpoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
@@ -212,7 +239,7 @@ def train_cycle_gan(epochs, x_dl, y_dl, sample_dir_x, sample_dir_y,
         in the form [G_xy, G_yx, D_x, D_y]. Either load_path or models 
         (or both) should be None.
     """
-    # Create models.
+    # Create models. GANs should stay in train mode.
     if not models:
         G_xy, G_yx, D_x, D_y = get_cycle_models(load_path)
     else:
