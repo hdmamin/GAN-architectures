@@ -32,6 +32,8 @@ def get_args():
                         help='Whether to use a pre-trained discriminator.')
     parser.add_argument('-s', '--sample_dir', type=str, default=None,
                         help='location to save samples')
+    parser.add_argument('--save_weights', type=bool, default=False,
+                        help='True to save model weights (default False).')
     parser.add_argument('-q', '--quiet_mode', type=bool, default=True,
                         help='Limit printed output from training loop.')
     parser.add_argument('--lr', type=float, default=2e-4,
@@ -84,8 +86,9 @@ def main(args):
     else:
         g = Generator(act=activation, norm=args.norm).to(device)
     output = train(args.epochs, dloader, lr, sample_freq=args.sample_freq,
-                   sample_dir=args.sample_dir, d_head_start=args.d_head_start,
-                   gd_ratio=args.gd_ratio, d=d, g=g)
+                   sample_dir=args.sample_dir, save_weights=args.save_weights,
+                   d_head_start=args.d_head_start, gd_ratio=args.gd_ratio, 
+                   d=d, g=g)
     
     # Save loss plots and sample gif in sample_dir.
     if args.sample_dir:

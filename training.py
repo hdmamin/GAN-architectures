@@ -271,7 +271,8 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=5, sample_dir='samples',
             real_labels = torch.ones(bs_curr, device=device)
             fake_labels = torch.zeros(bs_curr, device=device)
             noise = torch.randn(bs_curr, 100, 1, 1, device=device)
-            train_d = (i % gd_ratio == 0) or (epoch == 0 and i < d_head_start)
+            train_d = ((iters % gd_ratio == 0) or 
+                       (epoch == 0 and iters < d_head_start))
             train_g = (epoch > 0 or i >= d_head_start)
 
             ##################################################################
