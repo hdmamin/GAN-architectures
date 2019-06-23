@@ -95,7 +95,7 @@ def main(args):
     # Close Google Cloud VM when done.
     if args.stop_vm:
         subprocess.run('gcloud compute instances stop my-fastai-instance '
-                       '--zone=us-west2-b')
+                       '--zone=us-west2-b'.split(' '))
 
 
 if __name__ == '__main__':
