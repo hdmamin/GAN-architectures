@@ -160,7 +160,7 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
                               epoch=epoch)
                 torch.save(states, f'{sample_dir}/{epoch+1}.pth')
 
-    torch.save(stats, f'{sample_dir}/stats.csv')
+    torch.save(stats, f'{sample_dir}/stats.pkl')
     return stats
 
 
