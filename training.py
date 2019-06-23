@@ -86,11 +86,9 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
         lr1, lr2 = lr
     else:
         lr1 = lr2 = lr
-#     g_optim = torch.optim.Adam(g.parameters(), lr=lr1, betas=(b1, .999))
-#     d_optim = torch.optim.Adam(d.parameters(), lr=lr2, betas=(b1, .999))
-    criterion = nn.BCELoss()
     g_optim, d_optim = get_optimizers(g, d, lr1, lr2, b1)
-                                      
+    criterion = nn.BCELoss()                
+    
     # Noise used for sample images, not training.
     fixed_noise = torch.randn(dl.batch_size, 100, 1, 1, device=device)
 
