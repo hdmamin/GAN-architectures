@@ -30,10 +30,168 @@ def get_optimizers(g, d, lr_g, lr_d, b1=.5):
     d_optim = torch.optim.Adam(d.parameters(), lr=lr_d, betas=(b1, .999))
     return g_optim, d_optim
 
-                               
-def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
-          save_weights=False, d_head_start=0, gd_ratio=1, quiet_mode=True, g=None,
-          d=None):
+
+# def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=5, sample_dir='samples',
+#           save_weights=False, d_head_start=0, gd_ratio=1, quiet_mode=True, 
+#           g=None, d=None):
+#     """Train generator and discriminator with Adam.
+
+#     Parameters
+#     -----------
+#     epochs: int
+#         Number of epochs to train for.
+#     dl: DataLoader
+#     lr: float
+#         Learning rate. Paper recommends .0002.
+#     b1: float
+#         Hyperparameter for Adam. Paper recommends 0.5.
+#     sample_freq: int
+#         Save sample images from generator every n epochs (default 5).
+#     sample_dir: str
+#         Directory to save images output by the generator.
+#     save_weights: bool
+#         If True, save weights in the sample directory with the same 
+#         frequency as samples are generated. Default is False,
+#         meaning no weights will be saved.
+#     d_head_start: int
+#         Number of batches to train D for before starting to train G. Default of
+#         zero means both will be trained from the beginning. The hope is that
+#         a nonzero value can be used to make D a more useful teacher early in
+#         training.
+#     gd_ratio: int
+#         Number of times to train G for each time we train D. In other words,
+#         G will be trained every mini batch, but D will only be trained every
+#         gd_ratio epochs. If D loss is very low and G loss is high, the hope is
+#         that increasing gd_ratio will allow G to learn more and "catch up" to
+#         D.
+#     quiet_mode: bool
+#         If True, limit printed epoch output to a max of 20 times (e.g. for 100
+#         epochs, it will print results at every fifth epoch). Printing more
+#         frequently can incapacitate the notebook when training for many epochs.
+#     d: Discriminator, subclass of nn.Module
+#         Discriminator, a binary classifier (1 for real, 0 for fake).
+#     g: Generator, subclass of nn.Module
+#         Generator that upsamples random noise into image.
+#     """
+#     if not g:
+#         g = Generator().to(device)
+#     if not d:
+#         d = Discriminator().to(device)
+#     # For GANs, models should stay in train mode.
+#     g.train()
+#     d.train()
+
+#     # Define loss and optimizers.
+#     if isinstance(lr, Iterable):
+#         lr1, lr2 = lr
+#     else:
+#         lr1 = lr2 = lr
+#     g_optim, d_optim = get_optimizers(g, d, lr1, lr2, b1)
+#     criterion = nn.BCELoss()                
+    
+#     # Noise used for sample images, not training.
+#     fixed_noise = torch.randn(dl.batch_size, 100, 1, 1, device=device)
+
+#     # Suppress printed output to 20 total times to avoid slowing down nb.
+#     print_freq = 1
+#     if quiet_mode:
+#         print_freq = max(1, int(np.ceil(epochs / 20)))
+
+#     # Make directories for samples and weights.
+#     os.makedirs(sample_dir, exist_ok=True)
+
+#     # Store stats to return at end.
+#     stats = defaultdict(list)
+    
+#     # Train D and G.
+#     for epoch in range(epochs):
+#         for i, (x, y) in enumerate(dl):
+#             x = x.to(device)
+#             bs_curr = x.shape[0]
+#             real_labels = torch.ones(bs_curr, device=device)
+#             fake_labels = torch.zeros(bs_curr, device=device)
+#             noise = torch.randn(bs_curr, 100, 1, 1, device=device)
+#             train_d = (i % gd_ratio == 0) or (epoch == 0 and i < d_head_start)
+#             train_g = (epoch > 0 or i >= d_head_start)
+
+#             ##################################################################
+#             # Train discriminator. Detach G output for speed.
+#             ##################################################################
+#             d_optim.zero_grad()
+#             fake = g(noise)
+#             y_hat_fake = d(fake.detach())
+#             y_hat_real = d(x)
+
+#             if train_d:
+#                 # Compute losses.
+#                 d_loss_fake = criterion(y_hat_fake, fake_labels)
+#                 d_loss_real = criterion(y_hat_real, real_labels)
+#                 d_loss = d_loss_real + d_loss_fake
+
+#                 # Update stats.
+#                 fake_avg = y_hat_fake.mean().item()
+#                 real_avg = y_hat_real.mean().item()
+#                 stats['d_fake_avg'].append(fake_avg)
+#                 stats['d_real_avg'].append(real_avg)
+#                 stats['d_fake_loss'].append(d_loss_fake.item())
+#                 stats['d_real_loss'].append(d_loss_real.item())
+
+#                 # Backpropagation.
+#                 d_loss.backward()
+#                 d_optim.step()
+
+#             ##################################################################
+#             # Train generator. Use true_labels because we want to fool D.
+#             # G's weights are the same so no need to re-generate fake
+#             # examples. D was updated so compute loss again.
+#             ##################################################################
+#             if train_g:
+#                 g_optim.zero_grad()
+#                 g_loss = criterion(d(fake), real_labels)
+#                 stats['g_loss'].append(g_loss.item())
+#                 g_loss.backward()
+#                 g_optim.step()
+
+#         # If losses aren't changing, increase LR to try to escape.
+#         if (stats['d_fake_loss'][-1] == stats['d_fake_loss'][-2] and 
+#             stats['d_real_loss'][-1] == stats['d_real_loss'][-2]):
+#             lr1 *= 1.2
+#             lr2 *= 1.2
+#             g_optim, d_optim = get_optimizers(g, d, lr1, lr2, b1)
+        
+#         # Print losses.
+#         if epoch % print_freq == 0:
+#             print(f'\nEpoch [{epoch+1}/{epochs}] \nBatch {i+1} Metrics:')
+#             if not train_d:
+#                 print('>>>SKIP D TRAINING. Most recent stats:')
+#             print(f"D loss (real): {stats['d_real_loss'][-1]:.4f}\t"
+#                   f"D loss (fake): {stats['d_fake_loss'][-1]:.4f}")
+#             if train_g:
+#                 print(f"G loss: {stats['g_loss'][-1]:.4f}")
+
+#         # Generate sample from fixed noise at end of every nth epoch.
+#         if epoch % sample_freq == 0:
+#             with torch.no_grad():
+#                 fake = g(fixed_noise)
+#                 vutils.save_image(fake.detach(), f'{sample_dir}/{epoch+1}.png',
+#                                   normalize=True)
+
+#             # If specified, save weights corresponding to generated samples.
+#             if save_weights:
+#                 states = dict(g=g.state_dict(),
+#                               d=d.state_dict(),
+#                               g_optimizer=g_optim.state_dict(),
+#                               d_optimizer=d_optim.state_dict(),
+#                               epoch=epoch)
+#                 torch.save(states, f'{sample_dir}/{epoch+1}.pth')
+
+#     torch.save(stats, f'{sample_dir}/stats.pkl')
+#     return stats
+
+                      
+def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=5, sample_dir='samples',
+          save_weights=False, d_head_start=0, gd_ratio=1, quiet_mode=True, 
+          g=None, d=None):
     """Train generator and discriminator with Adam.
 
     Parameters
@@ -92,16 +250,18 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
     # Noise used for sample images, not training.
     fixed_noise = torch.randn(dl.batch_size, 100, 1, 1, device=device)
 
-    # Suppress printed output to 20 total times to avoid slowing down nb.
+    # Calculate printing frequency and sample frequency.
     print_freq = 1
     if quiet_mode:
         print_freq = max(1, int(np.ceil(epochs / 20)))
+    iter_sample_freq = len(dl) * sample_freq
 
     # Make directories for samples and weights.
     os.makedirs(sample_dir, exist_ok=True)
 
     # Store stats to return at end.
     stats = defaultdict(list)
+    iters = 0
     
     # Train D and G.
     for epoch in range(epochs):
@@ -152,7 +312,24 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
                 g_loss.backward()
                 g_optim.step()
 
-        # If losses aren't changing, increase LR to try to escape.
+            # Generate sample from fixed noise at end of every nth iteration.
+            if iters % iter_sample_freq == 0:
+                with torch.no_grad():
+                    fake = g(fixed_noise)
+                    vutils.save_image(fake.detach(), f'{sample_dir}/{epoch+1}.png',
+                                      normalize=True)
+
+                # If specified, save weights corresponding to generated samples.
+                if save_weights:
+                    states = dict(g=g.state_dict(),
+                                  d=d.state_dict(),
+                                  g_optimizer=g_optim.state_dict(),
+                                  d_optimizer=d_optim.state_dict(),
+                                  epoch=epoch)
+                    torch.save(states, f'{sample_dir}/{epoch+1}.pth')
+            iters += 1
+                      
+        # Losses sometimes get stuck at zero - try increasing LR to escape.
         if (stats['d_fake_loss'][-1] == stats['d_fake_loss'][-2] and 
             stats['d_real_loss'][-1] == stats['d_real_loss'][-2]):
             lr1 *= 1.2
@@ -169,25 +346,9 @@ def train(epochs, dl, lr=2e-4, b1=.5, sample_freq=10, sample_dir='samples',
             if train_g:
                 print(f"G loss: {stats['g_loss'][-1]:.4f}")
 
-        # Generate sample from fixed noise at end of every fifth epoch.
-        if epoch % sample_freq == 0:
-            with torch.no_grad():
-                fake = g(fixed_noise)
-                vutils.save_image(fake.detach(), f'{sample_dir}/{epoch+1}.png',
-                                  normalize=True)
-
-            # If specified, save weights corresponding to generated samples.
-            if save_weights:
-                states = dict(g=g.state_dict(),
-                              d=d.state_dict(),
-                              g_optimizer=g_optim.state_dict(),
-                              d_optimizer=d_optim.state_dict(),
-                              epoch=epoch)
-                torch.save(states, f'{sample_dir}/{epoch+1}.pth')
-
     torch.save(stats, f'{sample_dir}/stats.pkl')
     return stats
-
+                      
 
 def get_cycle_models(path=None):
     """Get 2 cycle generators and 2 discriminators. If a path to a weight file
