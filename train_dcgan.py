@@ -70,6 +70,12 @@ def main(args):
         lr = [args.lr, args.lr2]
     else:
         lr = args.lr
+            
+    # Record hyperparameters.
+    if args.sample_dir:
+        os.makedirs(args.sample_dir, exist_ok=True)
+        with open(os.path.join(args.sample_dir, 'README.md'), 'w') as f:
+            f.write(str(args))
         
     # Initialize models.
     d = Discriminator(act=activation, norm=args.norm).to(device)
@@ -81,12 +87,10 @@ def main(args):
                    sample_dir=args.sample_dir, d_head_start=args.d_head_start,
                    gd_ratio=args.gd_ratio, d=d, g=g)
     
-    # Save loss plots, sample gif, and settings in sample_dir.
+    # Save loss plots and sample gif in sample_dir.
     if args.sample_dir:
         plot_output(output, args.sample_dir)
         render_samples(args.sample_dir)
-        with open(os.path.join(args.sample_dir, 'README.md'), 'w') as f:
-            f.write(str(args))
 
     # Close Google Cloud VM when done.
     if args.stop_vm:

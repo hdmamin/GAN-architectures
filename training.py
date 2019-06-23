@@ -26,7 +26,7 @@ def get_optimizers(g, d, lr_g, lr_d, b1=.5):
     b1: float
         Hyperparameter for Adam.
     """
-    g_optim = torch.optim.Adam(g.parameters(), lr=lr_g, beta=(b1, .999))
+    g_optim = torch.optim.Adam(g.parameters(), lr=lr_g, betas=(b1, .999))
     d_optim = torch.optim.Adam(d.parameters(), lr=lr_d, betas=(b1, .999))
     return g_optim, d_optim
 

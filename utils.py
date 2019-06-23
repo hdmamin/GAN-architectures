@@ -9,7 +9,7 @@ from pathlib import Path
 import torchvision.utils as vutils
 
 
-def show_batch(dl, limit=64, size=10):
+def show_batch(dl, limit=64, size=10, fname=None):
     """Display a batch of images.
     
     Parameters
@@ -26,6 +26,8 @@ def show_batch(dl, limit=64, size=10):
     grid = vutils.make_grid(batch[:limit], normalize=True, nrow=8)
     plt.imshow(np.transpose(grid, (1, 2, 0)))
     plt.axis('off')
+    if fname:
+        plt.savefig(fname, bbox_inches=None)
     plt.show()
     
     
@@ -48,19 +50,23 @@ def plot_output(output, out_dir=None):
     DCGAN train function.
     """
     # Plot losses by mini batch.
-    fig, ax = plt.subplots(2, 1, figsize=(9, 6))
+    fig, ax = plt.subplots(3, 1, figsize=(9, 6))
     ax[0].plot(output['d_real_loss'], label='D real')
     ax[0].plot(output['d_fake_loss'], label='D fake')
-    ax[0].plot(output['g_loss'], label='G')
-    ax[0].set_title('Loss by Mini Batch')
+    ax[0].set_title('Discriminator Loss by Mini Batch')
     ax[0].legend()
     
+    ax[1].plot(output['g_loss'], label='G')
+    ax[1].set_title('Generator Loss by Mini Batch')
+    ax[1].legend()
+    
     # Plot soft prediction average by mini batch.
-    ax[1].plot(output['d_real_avg'], label='Real examples')
-    ax[1].plot(output['d_fake_avg'], label='Fake examples')
-    ax[1].set_title('Average Soft Predictions (D) by Mini Batch')
+    ax[2].plot(output['d_real_avg'], label='Real examples')
+    ax[2].plot(output['d_fake_avg'], label='Fake examples')
+    ax[2].set_title('Average Soft Predictions (D) by Mini Batch')
+    ax[2].legend()
+    
     plt.tight_layout()
-    plt.legend()
     if out_dir:
         plt.savefig(os.path.join(out_dir, 'output.png'), bbox_inches=None)
     plt.show()
