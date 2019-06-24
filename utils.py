@@ -94,8 +94,8 @@ def sorted_paths(dir_):
     """Pass in the name of a directory as a string and return a list of
     file Path objects sorted by epoch number.
     """
-    return sorted([f for f in Path(dir_).iterdir()
-                   if str(f.parts[-1])[0].isnumeric()],
+    return sorted([f for f in Path(dir_).iterdir() if str(f).endswith('png')
+                   and str(f.parts[-1])[0].isnumeric()],
                   key=lambda x: int(x.parts[-1].split('.')[0]))
 
 
