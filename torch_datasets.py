@@ -92,7 +92,7 @@ cifar_ds = datasets.CIFAR10(root='cifar',
 cifar_dl = DataLoader(cifar_ds, batch_size=bs, shuffle=True,
                       num_workers=workers)
 
-MNIST transforms and dataset (must download the first time we run code)
+# MNIST transforms and dataset (must download the first time we run code)
 mnist_tfms = transforms.Compose([transforms.Resize(img_size),
                                  transforms.ToTensor(),
                                  transforms.Normalize((0.1307,), (0.3081,))])
