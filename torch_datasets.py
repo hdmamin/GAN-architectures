@@ -80,10 +80,12 @@ quickdraw_tfms = transforms.Compose([transforms.ToTensor(),
 #                                                           [.3, .3, .3])
                                     ])
 cat_ds = ImageFolder('cat', transform=quickdraw_tfms)
-cat_dl = DataLoader(cat_ds, batch_size=bs, num_workers=workers)
+cat_dl = DataLoader(cat_ds, batch_size=bs, shuffle=True, 
+                    num_workers=workers)
 
 dog_ds = ImageFolder('dog', transform=quickdraw_tfms)
-dog_dl = DataLoader(dog_ds, batch_size=bs, num_workers=workers)
+dog_dl = DataLoader(dog_ds, batch_size=bs, shuffle=True,
+                    num_workers=workers)
 
 # CIFAR10 dataset (must download the first time we run code)
 cifar_ds = datasets.CIFAR10(root='cifar',
@@ -93,15 +95,15 @@ cifar_dl = DataLoader(cifar_ds, batch_size=bs, shuffle=True,
                       num_workers=workers)
 
 # MNIST transforms and dataset (must download the first time we run code)
-mnist_tfms = transforms.Compose([transforms.Resize(img_size),
-                                 transforms.ToTensor(),
-                                 transforms.Normalize((0.1307,), (0.3081,))])
-mnist_ds = datasets.MNIST(root='mnist',
-                          download=False,
-                          train=True,
-                          transform=mnist_tfms)
-mnist_dl = DataLoader(mnist_ds, batch_size=bs, shuffle=True,
-                      num_workers=workers)
+# mnist_tfms = transforms.Compose([transforms.Resize(img_size),
+#                                  transforms.ToTensor(),
+#                                  transforms.Normalize((0.1307,), (0.3081,))])
+# mnist_ds = datasets.MNIST(root='mnist',
+#                           download=False,
+#                           train=True,
+#                           transform=mnist_tfms)
+# mnist_dl = DataLoader(mnist_ds, batch_size=bs, shuffle=True,
+#                       num_workers=workers)
 
 # Celeb A dataset. Non-square images require additional cropping step.
 celeb_tfms = transforms.Compose([transforms.Resize(img_size),
