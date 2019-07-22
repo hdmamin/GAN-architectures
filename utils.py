@@ -100,7 +100,7 @@ def sorted_paths(dir_):
 
 
 def show_samples(sample_dir='samples'):
-    """Show samples from each """
+    """Show image samples from a given directory."""
     for f in sorted_paths(sample_dir):
         show_img(f)
 
