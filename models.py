@@ -108,7 +108,7 @@ class ResBlock(nn.Module):
         for i, layer in enumerate(self.layers):
             x_out = layer(x_out)
 
-            # Concatenation must occur before final activation.
+            # Skip connection must occur before final activation.
             if i != self.num_layers - 1:
                 x_out = self.activation(x_out)
         return x + x_out
