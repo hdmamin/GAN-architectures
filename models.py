@@ -78,8 +78,8 @@ class GRelu(nn.Module):
     
     
 class ResBlock(nn.Module):
-    """Residual block to be used in CycleGenerator. Note that the relu or 
-    leaky must still be applied on the output.
+    """Residual block to be used in CycleGenerator. Note that the activation
+    function must still be applied on the output.
     """
     
     def __init__(self, c_in, activation=GRelu(.2), num_layers=2, norm='bn'):
@@ -98,14 +98,19 @@ class ResBlock(nn.Module):
             'bn' for batch norm, 'in' for instance norm
         """
         super().__init__()
+        self.num_layers = num_layers
         self.layers = nn.ModuleList([conv_block(True, c_in, c_in, 3, 1, 1, norm=norm) 
                                      for i in range(num_layers)])
         self.activation = activation
     
     def forward(self, x):
         x_out = x
-        for layer in self.layers:
-            x_out = self.activation(layer(x_out))
+        for i, layer in enumerate(self.layers):
+            x_out = layer(x_out)
+
+            # Concatenation must occur before final activation.
+            if i != self.num_layers - 1:
+                x_out = self.activation(x_out)
         return x + x_out
 
 
