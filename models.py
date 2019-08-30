@@ -98,7 +98,7 @@ class ResBlock(nn.Module):
             'bn' for batch norm, 'in' for instance norm
         """
         super().__init__()
-        self.layers = nn.ModuleList([conv_block(False, c_in, c_in, 3, 1, 1, norm=norm) 
+        self.layers = nn.ModuleList([conv_block(True, c_in, c_in, 3, 1, 1, norm=norm) 
                                      for i in range(num_layers)])
         self.activation = activation
     
